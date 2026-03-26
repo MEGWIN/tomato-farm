@@ -25,13 +25,7 @@ export default function HeroSection() {
         </span>
       </div>
 
-      <div className="relative max-w-6xl mx-auto px-4 py-24 md:py-32 text-center">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-8">
-          <span className="w-2 h-2 bg-leaf-400 rounded-full animate-tomato-pulse" />
-          <span className="text-sm font-bold">MEGWIN公式サイト</span>
-        </div>
-
+      <div className="relative max-w-6xl mx-auto px-4 py-12 md:py-20 text-center">
         {/* Title */}
         <h1 className="font-heading font-black text-4xl md:text-6xl lg:text-7xl leading-tight mb-6 drop-shadow-lg">
           オレがオレに
