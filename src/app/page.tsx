@@ -1,3 +1,5 @@
+export const revalidate = 60;
+
 import HeroSection from "@/components/home/HeroSection";
 import LatestArticles from "@/components/home/LatestArticles";
 import SensorPlaceholder from "@/components/home/SensorPlaceholder";

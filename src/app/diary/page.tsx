@@ -1,3 +1,5 @@
+export const revalidate = 60;
+
 import type { Metadata } from "next";
 import { getDiaryPosts } from "@/lib/api";
 import DiaryCard from "@/components/diary/DiaryCard";
