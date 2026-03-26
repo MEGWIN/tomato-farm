@@ -29,7 +29,7 @@ export async function postToCms(data: PostData): Promise<{ id: string }> {
   };
 
   if (data.coverImageUrl) {
-    body.coverImage = data.coverImageUrl;
+    body.coverImage = { url: data.coverImageUrl };
   }
 
   const url = `https://${serviceDomain}.microcms.io/api/v1/${ENDPOINT}`;
