@@ -1,30 +1,34 @@
 /**
- * データ取得の抽象レイヤー
- * microCMS移行時はこのファイルの内部実装だけ書き換える
+ * データ取得レイヤー - microCMS接続
  */
-import { mockDiaryPosts } from "./mock-data";
+import { createClient } from "microcms-js-sdk";
 import type { DiaryPost, DiaryListResponse } from "./types";
+
+const client = createClient({
+  serviceDomain: process.env.MICROCMS_SERVICE_DOMAIN!,
+  apiKey: process.env.MICROCMS_API_KEY!,
+});
+
+const ENDPOINT = "tomato";
 
 export async function getDiaryPosts(
   offset = 0,
   limit = 10
 ): Promise<DiaryListResponse> {
-  const sorted = [...mockDiaryPosts].sort(
-    (a, b) =>
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-  );
-  return {
-    contents: sorted.slice(offset, offset + limit),
-    totalCount: mockDiaryPosts.length,
-    offset,
-    limit,
-  };
+  return await client.getList<DiaryPost>({
+    endpoint: ENDPOINT,
+    queries: { offset, limit, orders: "-publishedAt" },
+  });
 }
 
 export async function getDiaryBySlug(
   slug: string
 ): Promise<DiaryPost | null> {
-  return mockDiaryPosts.find((p) => p.slug === slug) ?? null;
+  const res = await client.getList<DiaryPost>({
+    endpoint: ENDPOINT,
+    queries: { filters: `slug[equals]${slug}`, limit: 1 },
+  });
+  return res.contents[0] ?? null;
 }
 
 export async function getLatestDiaryPosts(
@@ -35,5 +39,9 @@ export async function getLatestDiaryPosts(
 }
 
 export async function getAllSlugs(): Promise<string[]> {
-  return mockDiaryPosts.map((p) => p.slug);
+  const res = await client.getList<DiaryPost>({
+    endpoint: ENDPOINT,
+    queries: { fields: "slug", limit: 100 },
+  });
+  return res.contents.map((p) => p.slug);
 }
