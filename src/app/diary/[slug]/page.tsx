@@ -27,6 +27,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+/** Wrap 2+ consecutive <figure> elements in a 3-column grid container */
+function processBodyHtml(html: string): string {
+  return html.replace(
+    /(?:<figure[\s\S]*?<\/figure>\s*){2,}/g,
+    (match) => `<div class="image-grid">${match}</div>`
+  );
+}
+
 export default async function DiaryDetailPage({ params }: Props) {
   const { slug } = await params;
   const post = await getDiaryBySlug(slug);
@@ -78,7 +86,7 @@ export default async function DiaryDetailPage({ params }: Props) {
           <img
             src={post.coverImage.url}
             alt={post.title}
-            className="w-full h-64 md:h-80 object-cover rounded-2xl mb-8"
+            className="max-h-[480px] rounded-2xl mb-8 mx-auto"
           />
         ) : (
           <div className="h-64 md:h-80 bg-gradient-to-br from-tomato-100 to-sunshine-100 rounded-2xl flex items-center justify-center mb-8">
@@ -88,8 +96,8 @@ export default async function DiaryDetailPage({ params }: Props) {
 
         {/* Article Body */}
         <div
-          className="prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-soil-900 prose-p:text-soil-800 prose-li:text-soil-800"
-          dangerouslySetInnerHTML={{ __html: post.body }}
+          className="article-body prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-soil-900 prose-p:text-soil-800 prose-li:text-soil-800"
+          dangerouslySetInnerHTML={{ __html: processBodyHtml(post.body) }}
         />
 
         {/* Claude Sensei Section */}

@@ -10,7 +10,7 @@ export default function ClaudeSensei({ analysis, advice }: Props) {
     <div className="mt-12 bg-gradient-to-br from-leaf-50 to-leaf-100/50 rounded-2xl border border-leaf-200 overflow-hidden">
       {/* Header */}
       <div className="bg-leaf-600 text-white px-6 py-4 flex items-center gap-3">
-        <span className="text-3xl">🩺</span>
+        <img src="/images/chloe.png" alt="Chloe先生" className="w-10 h-10 rounded-full" />
         <div>
           <h2 className="font-heading font-black text-xl">
             Chloe先生のトマト診察室

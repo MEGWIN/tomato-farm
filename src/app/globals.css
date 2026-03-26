@@ -65,6 +65,31 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-soil-900);
 }
 
+/* Article body - consecutive images displayed as 3-column grid */
+.article-body .image-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin: 1.5em 0;
+}
+
+.article-body .image-grid figure {
+  margin: 0 !important;
+}
+
+.article-body .image-grid figure img {
+  width: 100%;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  border-radius: 0.75rem;
+}
+
+/* Single image in article - prevent portrait images from being too tall */
+.article-body > figure img {
+  max-height: 480px;
+  border-radius: 0.75rem;
+}
+
 /* Hero gradient animation */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }

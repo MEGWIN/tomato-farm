@@ -108,20 +108,26 @@ export default function AboutPage() {
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { icon: "⚡", name: "Next.js", desc: "フロントエンド" },
-              { icon: "🎨", name: "Tailwind CSS", desc: "スタイリング" },
-              { icon: "📝", name: "microCMS", desc: "記事管理" },
-              { icon: "▲", name: "Vercel", desc: "ホスティング" },
-              { icon: "🤖", name: "Claude AI", desc: "分析・生成" },
-              { icon: "📡", name: "ESP32", desc: "IoTセンサー" },
-              { icon: "💬", name: "Discord Bot", desc: "通知・連携" },
-              { icon: "📊", name: "Chart.js", desc: "データ可視化" },
+              { icon: "/images/tech/nextjs.svg", name: "Next.js", desc: "フロントエンド" },
+              { icon: "/images/tech/tailwindcss.svg", name: "Tailwind CSS", desc: "スタイリング" },
+              { icon: "/images/tech/microcms.svg", name: "microCMS", desc: "記事管理" },
+              { icon: "/images/tech/vercel.svg", name: "Vercel", desc: "ホスティング" },
+              { icon: "/images/tech/claude.svg", name: "Claude AI", desc: "分析・生成" },
+              { icon: "/images/tech/esp32.svg", name: "ESP32", desc: "IoTセンサー" },
+              { icon: "/images/tech/discord.svg", name: "Discord Bot", desc: "通知・連携" },
+              { icon: "/images/tech/chartjs.svg", name: "Chart.js", desc: "データ可視化" },
             ].map((tech) => (
               <div
                 key={tech.name}
                 className="bg-white rounded-xl p-4 text-center shadow-sm border border-soil-200/50"
               >
-                <span className="text-3xl block mb-2">{tech.icon}</span>
+                <Image
+                  src={tech.icon}
+                  alt={tech.name}
+                  width={40}
+                  height={40}
+                  className="mx-auto mb-2"
+                />
                 <p className="font-heading font-bold text-sm text-soil-900">
                   {tech.name}
                 </p>
