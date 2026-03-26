@@ -5,7 +5,7 @@ import DiaryCard from "@/components/diary/DiaryCard";
 export const metadata: Metadata = {
   title: "栽培日記",
   description:
-    "MEGWINのプチトマト水耕栽培ドキュメンタリー。毎日の成長記録とClaude先生のAI分析。",
+    "MEGWINのプチトマト水耕栽培ドキュメンタリー。毎日の成長記録とChloe先生のAI分析。",
 };
 
 export default async function DiaryPage() {

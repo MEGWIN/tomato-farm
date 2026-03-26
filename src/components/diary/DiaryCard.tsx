@@ -20,10 +20,10 @@ export default function DiaryCard({ post }: { post: DiaryPost }) {
         <div className="flex items-center gap-2 mb-3">
           <span
             className={`text-xs font-bold px-3 py-1 rounded-full ${
-              CATEGORY_COLORS[post.category]
+              CATEGORY_COLORS[post.category[0]]
             }`}
           >
-            {CATEGORY_LABELS[post.category]}
+            {CATEGORY_LABELS[post.category[0]]}
           </span>
           <span className="text-xs font-bold text-tomato-500 bg-tomato-50 px-3 py-1 rounded-full">
             Day {post.day}

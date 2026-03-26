@@ -53,10 +53,10 @@ export default async function DiaryDetailPage({ params }: Props) {
           <div className="flex items-center gap-2 mb-4">
             <span
               className={`text-xs font-bold px-3 py-1 rounded-full ${
-                CATEGORY_COLORS[post.category]
+                CATEGORY_COLORS[post.category[0]]
               }`}
             >
-              {CATEGORY_LABELS[post.category]}
+              {CATEGORY_LABELS[post.category[0]]}
             </span>
             <span className="text-xs font-bold text-tomato-500 bg-tomato-50 px-3 py-1 rounded-full">
               Day {post.day}
@@ -71,10 +71,18 @@ export default async function DiaryDetailPage({ params }: Props) {
           </h1>
         </header>
 
-        {/* Cover Image Placeholder */}
-        <div className="h-64 md:h-80 bg-gradient-to-br from-tomato-100 to-sunshine-100 rounded-2xl flex items-center justify-center mb-8">
-          <span className="text-8xl">🍅</span>
-        </div>
+        {/* Cover Image */}
+        {post.coverImage ? (
+          <img
+            src={post.coverImage.url}
+            alt={post.title}
+            className="w-full h-64 md:h-80 object-cover rounded-2xl mb-8"
+          />
+        ) : (
+          <div className="h-64 md:h-80 bg-gradient-to-br from-tomato-100 to-sunshine-100 rounded-2xl flex items-center justify-center mb-8">
+            <span className="text-8xl">🍅</span>
+          </div>
+        )}
 
         {/* Article Body */}
         <div

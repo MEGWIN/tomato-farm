@@ -54,6 +54,36 @@ export default function Footer() {
                   YouTube
                 </a>
               </li>
+              <li>
+                <a
+                  href={siteConfig.social.x}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-soil-200 hover:text-tomato-400 transition-colors text-sm"
+                >
+                  X (Twitter)
+                </a>
+              </li>
+              <li>
+                <a
+                  href={siteConfig.social.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-soil-200 hover:text-tomato-400 transition-colors text-sm"
+                >
+                  Instagram
+                </a>
+              </li>
+              <li>
+                <a
+                  href={siteConfig.social.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-soil-200 hover:text-tomato-400 transition-colors text-sm"
+                >
+                  Facebook
+                </a>
+              </li>
             </ul>
           </div>
         </div>

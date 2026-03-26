@@ -11,9 +11,9 @@ export type DiaryPost = {
   excerpt: string;
   coverImage: CMSImage | null;
   day: number; // 栽培日数
-  category: DiaryCategory;
-  claudeAnalysis: string | null; // Claude先生の分析 (HTML)
-  claudeAdvice: string | null; // Claude先生のアドバイス
+  category: DiaryCategory[];
+  claudeAnalysis: string | null; // Chloe先生の分析 (HTML)
+  claudeAdvice: string | null; // Chloe先生のアドバイス
   sensorData: SensorSnapshot | null;
 };
 

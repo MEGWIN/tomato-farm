@@ -29,24 +29,25 @@ export default function HeroSection() {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-8">
           <span className="w-2 h-2 bg-leaf-400 rounded-full animate-tomato-pulse" />
-          <span className="text-sm font-bold">AI × IoT スマート農場 稼働中</span>
+          <span className="text-sm font-bold">MEGWIN公式サイト</span>
         </div>
 
         {/* Title */}
         <h1 className="font-heading font-black text-4xl md:text-6xl lg:text-7xl leading-tight mb-6 drop-shadow-lg">
-          AI × 素人 ＝
+          オレがオレに
           <br />
-          <span className="text-sunshine-300">プチトマト農家</span>
-          への道
+          <span className="text-sunshine-300">オンデマンド</span>
+          <br />
+          MEGWINだ！
         </h1>
 
         {/* Subtitle */}
         <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-10 leading-relaxed">
-          水耕栽培完全素人<strong>MEGWIN</strong>が、
+          YouTubeパイオニア<strong>MEGWIN</strong>の公式サイト。
           <br className="hidden sm:inline" />
-          AI（<strong>Claude先生</strong>）の全力サポートで
+          プログラミング×電子工作×ライブ配信で
           <br className="hidden sm:inline" />
-          プチトマト1,000個収穫に挑戦！
+          「体験型ストリーミング」をやっていくぜMAJIDE！
         </p>
 
         {/* CTA */}
@@ -61,7 +62,7 @@ export default function HeroSection() {
             href="/about"
             className="inline-flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm text-white font-heading font-bold text-lg px-8 py-4 rounded-full border-2 border-white/30 hover:bg-white/20 transition-all"
           >
-            このプロジェクトとは？
+            MEGWINとは？
           </Link>
         </div>
       </div>

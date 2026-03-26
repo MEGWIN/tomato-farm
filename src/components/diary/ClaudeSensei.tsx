@@ -13,7 +13,7 @@ export default function ClaudeSensei({ analysis, advice }: Props) {
         <span className="text-3xl">🩺</span>
         <div>
           <h2 className="font-heading font-black text-xl">
-            Claude先生のトマト診察室
+            Chloe先生のトマト診察室
           </h2>
           <p className="text-leaf-100 text-sm">AI栽培アドバイザーの分析レポート</p>
         </div>
