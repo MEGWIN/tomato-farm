@@ -79,8 +79,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .article-body .image-grid figure img {
   width: 100%;
-  aspect-ratio: 3/4;
-  object-fit: cover;
+  height: auto;
   border-radius: 0.75rem;
 }
 

@@ -2,6 +2,7 @@ import { exec } from "child_process";
 import { writeFileSync, unlinkSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import { getCurrentWeather, formatWeatherForPrompt } from "./weather";
 
 export type GeneratedArticle = {
   title: string;
@@ -24,6 +25,14 @@ export async function generateArticle(
   userComment: string,
   imageUrl: string
 ): Promise<GeneratedArticle> {
+  let weatherLine = "";
+  try {
+    const weather = await getCurrentWeather();
+    weatherLine = `\n## 今日の八王子の天気\n${formatWeatherForPrompt(weather)}\n`;
+  } catch (e) {
+    console.error("天気取得失敗（天気なしで続行）:", e);
+  }
+
   const prompt = `
 あなたはプチトマト水耕栽培ブログの記事生成AIです。以下の情報から栽培日記の記事を生成してください。
 
@@ -32,20 +41,26 @@ ${userComment}
 
 ## 写真URL（参考情報）
 ${imageUrl}
+${weatherLine}
 
 ## 出力ルール
 以下のJSON形式で出力してください。JSON以外のテキストは一切出力しないでください。
 
 ### MEGWINパート（body）の文体:
+- **冒頭は必ず「オレがオレにオンデマンド!○○MEGWINだ!!」で始める**
+  - ○○には季節・天気・記事内容に合った短いMEGWINを肯定するフレーズを入れる
+  - 例: 「イケメンMEGWIN」「桜に合うMEGWIN」「平和大好きMEGWIN」「トマト育てるMEGWIN」
 - 一人称は「オレ」（カタカナ）
 - 語尾は「〜だぜ」「〜するぜ」「〜じゃん」系
 - 短文テンポ、「！」多用
 - 最後に「MAJIDE」を入れる
 - HTMLタグ（<p>, <h2>, <ul>, <li>等）で記述
+- 天気情報がある場合、本文中で自然に触れる（例: 「今日は快晴で25℃！トマト日和だぜ！」）
 
 ### Claude先生パート（claudeAnalysis）:
 - 植物の専門家として分析
 - 「現状分析」と「注意点」を含める
+- 天気情報がある場合、気温・湿度が栽培に与える影響にも触れる
 - HTMLタグで記述
 
 ### claudeAdvice:
@@ -128,6 +143,14 @@ export async function generateAppendContent(
   const now = new Date();
   const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
 
+  let weatherLine = "";
+  try {
+    const weather = await getCurrentWeather();
+    weatherLine = `\n## 現在の八王子の天気\n${formatWeatherForPrompt(weather)}\n`;
+  } catch (e) {
+    console.error("天気取得失敗（天気なしで続行）:", e);
+  }
+
   const prompt = `
 あなたはプチトマト水耕栽培ブログの追記セクション生成AIです。
 今日すでに記事が投稿されています。新しい報告を追記セクションとして生成してください。
@@ -140,6 +163,7 @@ ${userComment}
 
 ## 写真URL（参考情報）
 ${imageUrl}
+${weatherLine}
 
 ## 出力ルール
 以下のJSON形式で出力してください。JSON以外のテキストは一切出力しないでください。
@@ -152,10 +176,12 @@ ${imageUrl}
 - 最後に「MAJIDE」を入れる
 - HTMLタグ（<p>, <h2>, <ul>, <li>等）で記述
 - 既存の本文と重複しない新しい内容を書く
+- 天気情報がある場合、自然に触れる
 
 ### claudeAnalysis:
 - 既存の記事と今回の報告を総合的に分析
 - 植物の専門家として「現状分析」と「注意点」を含める
+- 天気情報がある場合、気温・湿度が栽培に与える影響にも触れる
 - HTMLタグで記述
 
 ### claudeAdvice:

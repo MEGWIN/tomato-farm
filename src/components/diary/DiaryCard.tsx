@@ -8,9 +8,18 @@ export default function DiaryCard({ post }: { post: DiaryPost }) {
       href={`/diary/${post.slug}`}
       className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-tomato-100/50 hover:-translate-y-1"
     >
-      {/* Cover Image Placeholder */}
-      <div className="h-40 bg-gradient-to-br from-tomato-100 to-sunshine-100 flex items-center justify-center">
-        <span className="text-5xl group-hover:scale-110 transition-transform">
+      {/* Cover Image */}
+      <div className="h-40 relative flex items-center justify-center overflow-hidden">
+        {post.coverImage ? (
+          <img
+            src={post.coverImage.url}
+            alt={post.title}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-tomato-100 to-sunshine-100" />
+        )}
+        <span className="relative text-5xl group-hover:scale-110 transition-transform drop-shadow-lg">
           🍅
         </span>
       </div>
