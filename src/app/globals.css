@@ -1,26 +1,86 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@plugin "@tailwindcss/typography";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Tomato Red */
+  --color-tomato-50: #FEF2F2;
+  --color-tomato-100: #FEE2E2;
+  --color-tomato-200: #FECACA;
+  --color-tomato-300: #FCA5A5;
+  --color-tomato-400: #F87171;
+  --color-tomato-500: #EF4444;
+  --color-tomato-600: #DC2626;
+  --color-tomato-700: #B91C1C;
+  --color-tomato-800: #991B1B;
+  --color-tomato-900: #7F1D1D;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Leaf Green */
+  --color-leaf-50: #F0FDF4;
+  --color-leaf-100: #DCFCE7;
+  --color-leaf-200: #BBF7D0;
+  --color-leaf-400: #4ADE80;
+  --color-leaf-500: #22C55E;
+  --color-leaf-600: #16A34A;
+  --color-leaf-700: #15803D;
+
+  /* Sunshine Yellow */
+  --color-sunshine-100: #FEF9C3;
+  --color-sunshine-200: #FEF08A;
+  --color-sunshine-300: #FDE047;
+  --color-sunshine-400: #FACC15;
+  --color-sunshine-500: #EAB308;
+
+  /* Soil (Background & Text) */
+  --color-soil-50: #FFFAF5;
+  --color-soil-100: #FFF5EB;
+  --color-soil-200: #F5E6D3;
+  --color-soil-800: #3D2B1F;
+  --color-soil-900: #2D1810;
+
+  /* Fonts */
+  --font-heading: "Zen Maru Gothic", "Noto Sans JP", sans-serif;
+  --font-body: "Noto Sans JP", sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-soil-50);
+  color: var(--color-soil-800);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+/* Prose styling for blog content */
+.prose h2 {
+  color: var(--color-tomato-700);
+}
+
+.prose a {
+  color: var(--color-tomato-600);
+}
+
+.prose strong {
+  color: var(--color-soil-900);
+}
+
+/* Hero gradient animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Tomato pulse */
+@keyframes tomato-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-tomato-pulse {
+  animation: tomato-pulse 2s ease-in-out infinite;
 }
