@@ -2,7 +2,25 @@ import Link from "next/link";
 import type { DiaryPost } from "@/lib/types";
 import { CATEGORY_LABELS, CATEGORY_COLORS } from "@/lib/types";
 
+/** 記事本文のHTMLから画像URLを抽出 */
+function extractImageUrls(html: string): string[] {
+  const urls: string[] = [];
+  const regex = /<img[^>]+src="([^"]+)"/g;
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    urls.push(match[1]);
+  }
+  return urls;
+}
+
 export default function DiaryCard({ post }: { post: DiaryPost }) {
+  // coverImage + 本文中の画像を集める
+  const images: string[] = [];
+  if (post.coverImage) images.push(post.coverImage.url);
+  images.push(...extractImageUrls(post.body));
+  // 重複除去して最大3枚
+  const uniqueImages = [...new Set(images)].slice(0, 3);
+
   return (
     <Link
       href={`/diary/${post.slug}`}
@@ -10,9 +28,21 @@ export default function DiaryCard({ post }: { post: DiaryPost }) {
     >
       {/* Cover Image */}
       <div className="h-40 relative flex items-center justify-center overflow-hidden">
-        {post.coverImage ? (
+        {uniqueImages.length >= 2 ? (
+          /* 2枚以上: 左右に並べてトマトを中央に */
+          <div className="absolute inset-0 flex">
+            {uniqueImages.slice(0, 2).map((url, i) => (
+              <img
+                key={i}
+                src={url}
+                alt=""
+                className="w-1/2 h-full object-cover"
+              />
+            ))}
+          </div>
+        ) : uniqueImages.length === 1 ? (
           <img
-            src={post.coverImage.url}
+            src={uniqueImages[0]}
             alt={post.title}
             className="absolute inset-0 w-full h-full object-cover"
           />
