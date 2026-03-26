@@ -16,7 +16,7 @@ export default function Home() {
         <div className="max-w-4xl mx-auto">
           <div className="bg-gradient-to-r from-leaf-50 to-leaf-100 rounded-2xl p-8 md:p-12 border border-leaf-200/50 shadow-md">
             <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="text-6xl md:text-7xl shrink-0">🩺</div>
+              <img src="/images/chloe.png" alt="Chloe先生" className="w-16 h-16 md:w-20 md:h-20 rounded-full shrink-0" />
               <div>
                 <h2 className="font-heading font-black text-2xl md:text-3xl text-leaf-700 mb-3">
                   Chloe先生のトマト診察室
