@@ -1,5 +1,5 @@
 import { exec } from "child_process";
-import { writeFileSync, unlinkSync } from "fs";
+import { writeFileSync, unlinkSync, mkdirSync, existsSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { getCurrentWeather, formatWeatherForPrompt } from "./weather";
@@ -22,6 +22,45 @@ export type AppendContent = {
   claudeAdvice: string;
 };
 
+/** Discord画像をダウンロードして一時ファイルに保存 */
+async function downloadImageToTmp(url: string, index: number): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error(`画像ダウンロード失敗 (${response.status}): ${url}`);
+      return null;
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // 拡張子を判定
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    let ext = "jpg";
+    if (contentType.includes("png")) ext = "png";
+    else if (contentType.includes("gif")) ext = "gif";
+    else if (contentType.includes("webp")) ext = "webp";
+
+    const tmpDir = join(tmpdir(), "tomato-bot-images");
+    if (!existsSync(tmpDir)) mkdirSync(tmpDir, { recursive: true });
+
+    const filePath = join(tmpDir, `photo-${Date.now()}-${index}.${ext}`);
+    writeFileSync(filePath, buffer);
+    console.log(`📸 画像保存: ${filePath} (${buffer.length} bytes)`);
+    return filePath;
+  } catch (error) {
+    console.error(`画像ダウンロード例外: ${url}`, error);
+    return null;
+  }
+}
+
+/** 一時画像ファイルを削除 */
+function cleanupTmpImages(paths: string[]) {
+  for (const p of paths) {
+    try { unlinkSync(p); } catch {}
+  }
+}
+
 export async function generateArticle(
   userComment: string,
   imageUrls: string[],
@@ -35,15 +74,25 @@ export async function generateArticle(
     console.error("天気取得失敗（天気なしで続行）:", e);
   }
 
+  // Discord画像を一時ファイルにダウンロード
+  const tmpImagePaths: string[] = [];
+  for (let i = 0; i < imageUrls.length; i++) {
+    const path = await downloadImageToTmp(imageUrls[i], i);
+    if (path) tmpImagePaths.push(path);
+  }
+
+  const hasImages = tmpImagePaths.length > 0;
+  const imageSection = hasImages
+    ? `## 添付写真（以下のファイルパスの画像を読み取って分析してください）\n${tmpImagePaths.join("\n")}\n\n上記の写真を注意深く観察し、トマトの生育状態（葉の色・形・大きさ、茎の太さ、花や実の有無、全体の健康状態）を分析に活用してください。\n`
+    : "";
+
   const prompt = `
 あなたはプチトマト水耕栽培ブログの記事生成AIです。以下の情報から栽培日記の記事を生成してください。
 
 ## MEGWINのコメント
 ${userComment}
 
-## 写真URL（参考情報）
-${imageUrls.join("\n")}
-${weatherLine}
+${imageSection}${weatherLine}
 
 ## 今回の記事番号
 Day ${nextDay}（この番号を必ず使用してください。変更しないでください。）
@@ -63,9 +112,10 @@ Day ${nextDay}（この番号を必ず使用してください。変更しない
 - NGワード: 「頑張ります」「感謝」「夢に向かって」「w」は禁止
 - HTMLタグ（<p>, <h2>, <ul>, <li>等）で記述
 - 天気情報がある場合、本文中で自然に触れる（例: 「今日は快晴で25℃！トマト日和だぜ！」）
+${hasImages ? "- **写真で見えるトマトの様子を具体的に描写する**（例: 「見てくれよこの葉っぱ！めちゃくちゃ青々としてるじゃねぇか！」）" : ""}
 
 ### Claude先生パート（claudeAnalysis）:
-- 植物の専門家として分析
+- 植物の専門家として分析${hasImages ? "\n- **添付写真を目視で分析し、葉の色合い・茎の状態・成長具合・病害虫の兆候などを具体的に言及する**" : ""}
 - 「現状分析」と「注意点」を含める
 - 天気情報がある場合、気温・湿度が栽培に与える影響にも触れる
 - **300文字程度に収める（簡潔に要点だけ）**
@@ -75,7 +125,7 @@ Day ${nextDay}（この番号を必ず使用してください。変更しない
 - 次にやるべきことを1文で簡潔に
 
 ### heightCm（草丈の数値抽出）:
-- MEGWINのコメントや文脈から草丈（cm）が読み取れる場合、その数値を入れる
+- MEGWINのコメントや文脈から草丈（cm）が読み取れる場合、その数値を入れる${hasImages ? "\n- 写真から草丈を推定できる場合もその情報を参考にする" : ""}
 - 例: 「50cmくらいになった」→ 50、「だいぶ大きくなった」→ null
 - 数値が不明な場合は null
 
@@ -94,33 +144,32 @@ Day ${nextDay}（この番号を必ず使用してください。変更しない
 
 categoryは以下から選択: daily, experiment, trouble, harvest, setup
 
-JSONのみを出力:
-`.trim();
+JSONのみを出力:`.trim();
 
-  console.log("🤖 Claude Code CLIで記事生成中...");
+  console.log("🤖 Claude Code CLIで記事生成中...(画像解析あり)");
 
   // CLAUDECODE環境変数を除外（ネスト防止）
   const cleanEnv = { ...process.env };
   delete cleanEnv.CLAUDECODE;
 
-  // プロンプトを一時ファイルに書き出し（Windowsコマンドライン文字数制限回避）
+  // プロンプトを一時ファイルに書き出し
   const tmpFile = join(tmpdir(), `claude-prompt-${Date.now()}.txt`);
   writeFileSync(tmpFile, prompt, "utf-8");
 
   try {
     const stdout = await new Promise<string>((resolve, reject) => {
       const timer = setTimeout(() => {
-        reject(new Error("Claude CLI タイムアウト (120秒)"));
-      }, 120000);
+        reject(new Error("Claude CLI タイムアウト (180秒)"));
+      }, 180000);
 
       exec(
         `type "${tmpFile}" | claude -p`,
         {
           env: cleanEnv,
           maxBuffer: 1024 * 1024,
-          timeout: 120000,
+          timeout: 180000,
         },
-        (error, stdout, stderr) => {
+        (error, stdout) => {
           clearTimeout(timer);
           if (error) reject(new Error(`Claude CLI failed: ${error.message}`));
           else resolve(stdout);
@@ -148,6 +197,7 @@ JSONのみを出力:
     return article;
   } finally {
     try { unlinkSync(tmpFile); } catch {}
+    cleanupTmpImages(tmpImagePaths);
   }
 }
 
@@ -168,6 +218,18 @@ export async function generateAppendContent(
     console.error("天気取得失敗（天気なしで続行）:", e);
   }
 
+  // Discord画像を一時ファイルにダウンロード
+  const tmpImagePaths: string[] = [];
+  for (let i = 0; i < imageUrls.length; i++) {
+    const path = await downloadImageToTmp(imageUrls[i], i);
+    if (path) tmpImagePaths.push(path);
+  }
+
+  const hasImages = tmpImagePaths.length > 0;
+  const imageSection = hasImages
+    ? `## 添付写真（以下のファイルパスの画像を読み取って分析してください）\n${tmpImagePaths.join("\n")}\n\n上記の写真を注意深く観察し、トマトの現在の状態を分析に活用してください。\n`
+    : "";
+
   const prompt = `
 あなたはプチトマト水耕栽培ブログの追記セクション生成AIです。
 今日すでに記事が投稿されています。新しい報告を追記セクションとして生成してください。
@@ -178,9 +240,7 @@ ${existingBody}
 ## MEGWINの新しいコメント
 ${userComment}
 
-## 写真URL（参考情報）
-${imageUrls.join("\n")}
-${weatherLine}
+${imageSection}${weatherLine}
 
 ## 出力ルール
 以下のJSON形式で出力してください。JSON以外のテキストは一切出力しないでください。
@@ -196,10 +256,11 @@ ${weatherLine}
 - HTMLタグ（<p>, <h2>, <ul>, <li>等）で記述
 - 既存の本文と重複しない新しい内容を書く
 - 天気情報がある場合、自然に触れる
+${hasImages ? "- **写真で見えるトマトの様子を具体的に描写する**" : ""}
 
 ### claudeAnalysis:
 - 既存の記事と今回の報告を総合的に分析
-- 植物の専門家として「現状分析」と「注意点」を含める
+- 植物の専門家として「現状分析」と「注意点」を含める${hasImages ? "\n- **添付写真を目視で分析し、葉の色・茎の状態・成長具合・病害虫の兆候などを具体的に言及する**" : ""}
 - 天気情報がある場合、気温・湿度が栽培に与える影響にも触れる
 - **300文字程度に収める（簡潔に要点だけ）**
 - HTMLタグで記述
@@ -214,10 +275,9 @@ ${weatherLine}
   "claudeAdvice": "次への指示1文"
 }
 
-JSONのみを出力:
-`.trim();
+JSONのみを出力:`.trim();
 
-  console.log("🤖 Claude Code CLIで追記セクション生成中...");
+  console.log("🤖 Claude Code CLIで追記セクション生成中...(画像解析あり)");
 
   const cleanEnv = { ...process.env };
   delete cleanEnv.CLAUDECODE;
@@ -228,15 +288,15 @@ JSONのみを出力:
   try {
     const stdout = await new Promise<string>((resolve, reject) => {
       const timer = setTimeout(() => {
-        reject(new Error("Claude CLI タイムアウト (120秒)"));
-      }, 120000);
+        reject(new Error("Claude CLI タイムアウト (180秒)"));
+      }, 180000);
 
       exec(
         `type "${tmpFile}" | claude -p`,
         {
           env: cleanEnv,
           maxBuffer: 1024 * 1024,
-          timeout: 120000,
+          timeout: 180000,
         },
         (error, stdout) => {
           clearTimeout(timer);
@@ -261,5 +321,6 @@ JSONのみを出力:
     return content;
   } finally {
     try { unlinkSync(tmpFile); } catch {}
+    cleanupTmpImages(tmpImagePaths);
   }
 }

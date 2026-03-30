@@ -138,6 +138,9 @@ export default function AboutPage() {
               { icon: "/images/tech/esp32.svg", name: "ESP32", desc: "IoTセンサー" },
               { icon: "/images/tech/discord.svg", name: "Discord Bot", desc: "通知・連携" },
               { icon: "/images/tech/chartjs.svg", name: "Chart.js", desc: "データ可視化" },
+              { icon: "/images/tech/raspberrypi.svg", name: "Raspberry Pi", desc: "IoTモニタリング" },
+              { icon: "/images/tech/python.svg", name: "Python", desc: "データ収集・処理" },
+              { icon: "/images/tech/openmeteo.svg", name: "Open-Meteo", desc: "天気API" },
             ].map((tech) => (
               <div
                 key={tech.name}
