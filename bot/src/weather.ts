@@ -12,6 +12,8 @@ export interface WeatherData {
   weatherDescription: string;
   windSpeed: number;
   precipitation: number;
+  tempMax: number;
+  tempMin: number;
 }
 
 const WEATHER_DESCRIPTIONS: Record<number, string> = {
@@ -41,13 +43,14 @@ const WEATHER_DESCRIPTIONS: Record<number, string> = {
 };
 
 export async function getCurrentWeather(): Promise<WeatherData> {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${HACHIOJI_LAT}&longitude=${HACHIOJI_LON}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,precipitation&timezone=Asia%2FTokyo`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${HACHIOJI_LAT}&longitude=${HACHIOJI_LON}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,precipitation&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo`;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Weather API error: ${res.status}`);
 
   const data = await res.json();
   const current = data.current;
+  const daily = data.daily;
 
   return {
     temperature: current.temperature_2m,
@@ -55,10 +58,12 @@ export async function getCurrentWeather(): Promise<WeatherData> {
     weatherDescription: WEATHER_DESCRIPTIONS[current.weather_code] ?? "不明",
     windSpeed: current.wind_speed_10m,
     precipitation: current.precipitation,
+    tempMax: daily.temperature_2m_max[0],
+    tempMin: daily.temperature_2m_min[0],
   };
 }
 
 /** 天気情報をプロンプト用テキストに変換 */
 export function formatWeatherForPrompt(weather: WeatherData): string {
-  return `天気: ${weather.weatherDescription} / 気温: ${weather.temperature}℃ / 湿度: ${weather.humidity}% / 風速: ${weather.windSpeed}km/h / 降水量: ${weather.precipitation}mm`;
+  return `天気: ${weather.weatherDescription} / 最高気温: ${weather.tempMax}℃ / 最低気温: ${weather.tempMin}℃ / 現在気温: ${weather.temperature}℃ / 湿度: ${weather.humidity}% / 風速: ${weather.windSpeed}km/h / 降水量: ${weather.precipitation}mm`;
 }

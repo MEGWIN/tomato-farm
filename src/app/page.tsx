@@ -1,15 +1,17 @@
 export const revalidate = 60;
 
 import HeroSection from "@/components/home/HeroSection";
+import CultivationDashboard from "@/components/home/CultivationDashboard";
 import LatestArticles from "@/components/home/LatestArticles";
-import SensorPlaceholder from "@/components/home/SensorPlaceholder";
+import AffiliateTools from "@/components/home/AffiliateTools";
 
 export default function Home() {
   return (
     <>
       <HeroSection />
+      <CultivationDashboard />
       <LatestArticles />
-      <SensorPlaceholder />
+      <AffiliateTools />
 
       {/* Chloe先生ティーザー */}
       <section className="py-16 px-4">
@@ -42,7 +44,7 @@ export default function Home() {
               MEGWIN軍団、募集中だぜ！
             </h2>
             <p className="text-lg md:text-xl text-white/90 leading-relaxed mb-6 max-w-2xl mx-auto">
-              オレと一緒に「体験型ストリーミング」を盛り上げてくれる仲間を探してる！
+              オレと一緒に「体験型ストリー��ング」を盛り上げてくれる仲間を探してる！
               プログラミング、電子工作、配信、なんでもOK。
               やる気があるヤツ、いくぞ！
             </p>

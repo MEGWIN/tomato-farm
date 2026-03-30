@@ -1,4 +1,5 @@
 import { Client, GatewayIntentBits, Partials, type Message } from "discord.js";
+import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
 import { generateArticle, generateAppendContent } from "./generate-article";
 import { postToCms, uploadImageToCms, getCmsEntry, updateCmsEntry, getLatestDayNumber } from "./post-to-cms";
@@ -7,6 +8,12 @@ import { getTodayEntryId, saveTodayEntryId } from "./today-entry";
 config({ path: __dirname + "/../.env" });
 
 const CHANNEL_ID = process.env.DISCORD_CHANNEL_ID!;
+
+// Supabase client (anon key - RLS allows insert/update on cultivation_logs)
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!
+);
 
 const client = new Client({
   intents: [
@@ -20,6 +27,79 @@ const client = new Client({
 client.once("ready", () => {
   console.log(`🍅 Bot起動: ${client.user?.tag}`);
 });
+
+/** 栽培ログをSupabaseに保存 */
+async function saveCultivationLog(
+  day: number,
+  heightCm: number | null,
+  slug: string | null,
+  note: string | null
+) {
+  const today = new Date().toISOString().split("T")[0];
+  const { error } = await supabase.from("cultivation_logs").insert({
+    date: today,
+    day_number: day,
+    height_cm: heightCm,
+    diary_slug: slug,
+    note,
+  });
+  if (error) {
+    console.error("栽培ログ保存失敗:", error.message);
+  } else {
+    console.log("📊 栽培ログ保存完了: Day", day, heightCm ? `${heightCm}cm` : "(草丈なし)");
+  }
+}
+
+/** 栽培ログの草丈を更新 */
+async function updateCultivationLogHeight(day: number, heightCm: number) {
+  const today = new Date().toISOString().split("T")[0];
+  const { error } = await supabase
+    .from("cultivation_logs")
+    .update({ height_cm: heightCm })
+    .eq("date", today)
+    .eq("day_number", day);
+  if (error) {
+    console.error("草丈更新失敗:", error.message);
+  } else {
+    console.log("📏 草丈更新完了:", heightCm, "cm");
+  }
+}
+
+/** Discordで草丈を質問し、返答を待つ */
+async function askForHeight(message: Message, day: number) {
+  await message.channel.send("📏 今日の草丈は何cm？（例: 27、スキップするなら「なし」）");
+
+  try {
+    const collected = await message.channel.awaitMessages({
+      filter: (m) => m.author.id === message.author.id,
+      max: 1,
+      time: 120_000, // 2分待つ
+    });
+
+    const reply = collected.first();
+    if (!reply) return;
+
+    const text = reply.content.trim();
+    if (text === "なし" || text === "スキップ") {
+      await reply.reply("👌 草丈の記録はスキップしたぜ！");
+      return;
+    }
+
+    // テキストから数値を抽出（「大体27cmかな」「27」「27cm」等に対応）
+    const numMatch = text.match(/(\d+(?:\.\d+)?)/);
+    const height = numMatch ? parseFloat(numMatch[1]) : NaN;
+    if (isNaN(height) || height <= 0 || height > 1000) {
+      await reply.reply("🤔 数値が読み取れなかったぜ...次回でOK！");
+      return;
+    }
+
+    await updateCultivationLogHeight(day, height);
+    await reply.reply(`✅ 草丈 ${height}cm を記録したぜ！`);
+  } catch {
+    // タイムアウト - 何もしない
+    console.log("草丈質問タイムアウト（スキップ）");
+  }
+}
 
 client.on("messageCreate", async (message: Message) => {
   // Bot自身のメッセージは無視
@@ -112,12 +192,25 @@ client.on("messageCreate", async (message: Message) => {
       // 今日のエントリIDを保存
       saveTodayEntryId(cmsResult.id);
 
+      // 栽培ログをSupabaseに保存
+      await saveCultivationLog(
+        nextDay,
+        article.heightCm,
+        article.slug,
+        null
+      );
+
       const cmsEditUrl = `https://${process.env.MICROCMS_SERVICE_DOMAIN}.microcms.io/apis/tomato/${cmsResult.id}`;
       await message.reply(
         `✅ 記事を下書き保存したぜ！\n` +
         `📝 **${article.title}**\n` +
         `🔗 確認・公開はこちら → ${cmsEditUrl}`
       );
+
+      // 草丈が取れなかった場合、Discordで質問
+      if (article.heightCm == null) {
+        await askForHeight(message, nextDay);
+      }
     }
   } catch (error) {
     console.error("記事生成エラー:", error);

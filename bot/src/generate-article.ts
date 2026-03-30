@@ -13,6 +13,7 @@ export type GeneratedArticle = {
   category: string;
   claudeAnalysis: string;
   claudeAdvice: string;
+  heightCm: number | null;
 };
 
 export type AppendContent = {
@@ -73,6 +74,11 @@ Day ${nextDay}（この番号を必ず使用してください。変更しない
 ### claudeAdvice:
 - 次にやるべきことを1文で簡潔に
 
+### heightCm（草丈の数値抽出）:
+- MEGWINのコメントや文脈から草丈（cm）が読み取れる場合、その数値を入れる
+- 例: 「50cmくらいになった」→ 50、「だいぶ大きくなった」→ null
+- 数値が不明な場合は null
+
 ### JSON形式:
 {
   "title": "Day ${nextDay} - タイトル",
@@ -82,7 +88,8 @@ Day ${nextDay}（この番号を必ず使用してください。変更しない
   "day": ${nextDay},
   "category": "daily",
   "claudeAnalysis": "<p>Claude先生の分析HTML</p>",
-  "claudeAdvice": "次への指示1文"
+  "claudeAdvice": "次への指示1文",
+  "heightCm": null
 }
 
 categoryは以下から選択: daily, experiment, trouble, harvest, setup
