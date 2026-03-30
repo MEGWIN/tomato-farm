@@ -29,6 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 /** Wrap 2+ consecutive <figure> elements in a 3-column grid container */
 function processBodyHtml(html: string): string {
+  if (html.includes("image-grid")) return html;
   return html.replace(
     /(?:<figure[\s\S]*?<\/figure>\s*){2,}/g,
     (match) => `<div class="image-grid">${match}</div>`
@@ -81,17 +82,19 @@ export default async function DiaryDetailPage({ params }: Props) {
           </h1>
         </header>
 
-        {/* Cover Image */}
-        {post.coverImage ? (
-          <img
-            src={post.coverImage.url}
-            alt={post.title}
-            className="max-h-[480px] rounded-2xl mb-8 mx-auto"
-          />
-        ) : (
-          <div className="h-64 md:h-80 bg-gradient-to-br from-tomato-100 to-sunshine-100 rounded-2xl flex items-center justify-center mb-8">
-            <span className="text-8xl">🍅</span>
-          </div>
+        {/* Cover Image (本文に画像がある場合は非表示) */}
+        {!/<img\s/.test(post.body) && (
+          post.coverImage ? (
+            <img
+              src={post.coverImage.url}
+              alt={post.title}
+              className="max-h-[480px] rounded-2xl mb-8 mx-auto"
+            />
+          ) : (
+            <div className="h-64 md:h-80 bg-gradient-to-br from-tomato-100 to-sunshine-100 rounded-2xl flex items-center justify-center mb-8">
+              <span className="text-8xl">🍅</span>
+            </div>
+          )
         )}
 
         {/* Article Body */}

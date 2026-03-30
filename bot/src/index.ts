@@ -1,7 +1,7 @@
 import { Client, GatewayIntentBits, Partials, type Message } from "discord.js";
 import { config } from "dotenv";
 import { generateArticle, generateAppendContent } from "./generate-article";
-import { postToCms, uploadImageToCms, getCmsEntry, updateCmsEntry } from "./post-to-cms";
+import { postToCms, uploadImageToCms, getCmsEntry, updateCmsEntry, getLatestDayNumber } from "./post-to-cms";
 import { getTodayEntryId, saveTodayEntryId } from "./today-entry";
 
 config({ path: __dirname + "/../.env" });
@@ -29,10 +29,10 @@ client.on("messageCreate", async (message: Message) => {
   if (message.channelId !== CHANNEL_ID) return;
 
   // 画像がない場合は無視
-  const imageAttachment = message.attachments.find((a) =>
+  const imageAttachments = message.attachments.filter((a) =>
     a.contentType?.startsWith("image/")
   );
-  if (!imageAttachment) return;
+  if (imageAttachments.size === 0) return;
 
   const userText = message.content.trim();
   if (!userText) {
@@ -41,15 +41,18 @@ client.on("messageCreate", async (message: Message) => {
   }
 
   try {
-    // 1. 画像をダウンロードしてmicroCMSにアップロード
-    const imageUrl = imageAttachment.url;
-    console.log("📸 画像URL:", imageUrl);
-
-    let cmsImageUrl: string | null = null;
-    try {
-      cmsImageUrl = await uploadImageToCms(imageUrl, imageAttachment.name ?? "photo.jpg");
-    } catch (e) {
-      console.error("画像アップロード失敗（記事は画像なしで続行）:", e);
+    // 1. 全画像をダウンロードしてmicroCMSにアップロード
+    const cmsImageUrls: string[] = [];
+    const discordImageUrls: string[] = [];
+    for (const [, att] of imageAttachments) {
+      console.log("📸 画像URL:", att.url);
+      discordImageUrls.push(att.url);
+      try {
+        const uploaded = await uploadImageToCms(att.url, att.name ?? "photo.jpg");
+        cmsImageUrls.push(uploaded);
+      } catch (e) {
+        console.error("画像アップロード失敗（スキップ）:", e);
+      }
     }
 
     // 2. 今日すでにエントリがあるか確認
@@ -64,13 +67,17 @@ client.on("messageCreate", async (message: Message) => {
       const existingBody = (existing.body as string) || "";
 
       // Claude CLIで追記セクション生成
-      const appendContent = await generateAppendContent(userText, imageUrl, existingBody);
+      const appendContent = await generateAppendContent(userText, discordImageUrls, existingBody);
 
-      // 本文を結合（<hr>で区切り）
-      const imageTag = cmsImageUrl
-        ? `<figure><img src="${cmsImageUrl}" alt="栽培写真" /></figure>`
-        : "";
-      const updatedBody = existingBody + "\n<hr>\n" + imageTag + appendContent.bodySection;
+      // 本文を結合（<hr>で区切り、画像はテキストの後ろ）
+      const imageTags = cmsImageUrls
+        .map((url) => `<figure><img src="${url}" alt="栽培写真" /></figure>`)
+        .join("\n");
+      const wrappedImages =
+        cmsImageUrls.length >= 2
+          ? `<div class="image-grid">${imageTags}</div>`
+          : imageTags;
+      const updatedBody = existingBody + "\n<hr>\n" + appendContent.bodySection + "\n" + wrappedImages;
 
       // microCMSを更新
       await updateCmsEntry(todayEntryId, {
@@ -88,13 +95,18 @@ client.on("messageCreate", async (message: Message) => {
       // === 新規作成モード ===
       await message.reply("🍅 記事を生成中...少し待ってね！");
 
+      // 最新Day番号を取得して次の番号を決定
+      const latestDay = await getLatestDayNumber();
+      const nextDay = latestDay + 1;
+
       // Claude Code CLIで記事生成
-      const article = await generateArticle(userText, imageUrl);
+      const article = await generateArticle(userText, discordImageUrls, nextDay);
 
       // microCMSに下書き投稿
       const cmsResult = await postToCms({
         ...article,
-        coverImageUrl: cmsImageUrl,
+        coverImageUrl: cmsImageUrls[0] ?? null,
+        bodyImageUrls: cmsImageUrls,
       });
 
       // 今日のエントリIDを保存

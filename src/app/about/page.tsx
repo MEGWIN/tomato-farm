@@ -48,7 +48,7 @@ export default function AboutPage() {
           <h2 className="font-heading font-black text-3xl text-soil-900 text-center mb-10">
             チームメンバー
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* MEGWIN */}
             <div className="bg-white rounded-2xl p-8 shadow-md border border-tomato-100/50 text-center">
               <div className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-4">
@@ -96,6 +96,28 @@ export default function AboutPage() {
                 Anthropic社のAI。写真から成長分析、気象データから未来予測、
                 栽培アドバイスまで全力サポート。
                 このサイトの記事もChloe先生が生成しています。
+              </p>
+            </div>
+            {/* パンダ */}
+            <div className="bg-white rounded-2xl p-8 shadow-md border border-soil-200/50 text-center">
+              <div className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-4">
+                <Image
+                  src="/images/panda.png"
+                  alt="パンダ"
+                  width={96}
+                  height={96}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="font-heading font-black text-xl text-soil-900 mb-2">
+                パンダ
+              </h3>
+              <p className="text-soil-600 font-bold text-sm mb-4">
+                中国産 / 新メンバー
+              </p>
+              <p className="text-soil-800/70 text-sm leading-relaxed">
+                軍団オーディションで選ばれ、いまこっそり日本に来ている。
+                好きな食べ物は牛肉のステーキ。焼き加減はミディアムベア。
               </p>
             </div>
           </div>

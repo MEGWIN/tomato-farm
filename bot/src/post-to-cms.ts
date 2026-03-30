@@ -11,16 +11,27 @@ function getEnv() {
 
 type PostData = GeneratedArticle & {
   coverImageUrl: string | null;
+  bodyImageUrls: string[];
 };
 
 /** microCMSに下書きとして投稿 */
 export async function postToCms(data: PostData): Promise<{ id: string }> {
   const { serviceDomain, apiKey } = getEnv();
 
+  // 本文の末尾に画像を埋め込む（2枚以上はgridで横並び）
+  const imageTags = data.bodyImageUrls
+    .map((url) => `<figure><img src="${url}" alt="栽培写真" /></figure>`)
+    .join("\n");
+  const wrappedImages =
+    data.bodyImageUrls.length >= 2
+      ? `<div class="image-grid">${imageTags}</div>`
+      : imageTags;
+  const fullBody = wrappedImages ? data.body + "\n" + wrappedImages : data.body;
+
   const body: Record<string, unknown> = {
     title: data.title,
     slug: data.slug,
-    body: data.body,
+    body: fullBody,
     excerpt: data.excerpt,
     day: data.day,
     category: [data.category],
@@ -29,7 +40,7 @@ export async function postToCms(data: PostData): Promise<{ id: string }> {
   };
 
   if (data.coverImageUrl) {
-    body.coverImage = { url: data.coverImageUrl };
+    body.coverImage = data.coverImageUrl;
   }
 
   const url = `https://${serviceDomain}.microcms.io/api/v1/${ENDPOINT}`;
@@ -93,6 +104,27 @@ export async function updateCmsEntry(
   }
 
   console.log("✅ microCMSエントリ更新完了:", id);
+}
+
+/** microCMSから最新のday番号を取得 */
+export async function getLatestDayNumber(): Promise<number> {
+  const { serviceDomain, apiKey } = getEnv();
+  const url = `https://${serviceDomain}.microcms.io/api/v1/${ENDPOINT}?limit=1&orders=-day&fields=day`;
+
+  const res = await fetch(url, {
+    headers: { "X-MICROCMS-API-KEY": apiKey },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`microCMS day取得失敗 (${res.status}): ${text}`);
+  }
+
+  const result = await res.json();
+  if (result.contents && result.contents.length > 0) {
+    return result.contents[0].day ?? 0;
+  }
+  return 0;
 }
 
 /** 画像URLからmicroCMSメディアにアップロード */
