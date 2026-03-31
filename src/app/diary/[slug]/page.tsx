@@ -36,6 +36,19 @@ function processBodyHtml(html: string): string {
   );
 }
 
+/** Split body into main content and version-up appendix */
+function splitBody(html: string): { main: string; appendix: string | null } {
+  const marker = '<section class="version-up">';
+  const idx = html.indexOf(marker);
+  if (idx === -1) return { main: html, appendix: null };
+  const endTag = '</section>';
+  const endIdx = html.indexOf(endTag, idx);
+  if (endIdx === -1) return { main: html, appendix: null };
+  const appendix = html.slice(idx + marker.length, endIdx);
+  const main = html.slice(0, idx) + html.slice(endIdx + endTag.length);
+  return { main, appendix };
+}
+
 export default async function DiaryDetailPage({ params }: Props) {
   const { slug } = await params;
   const post = await getDiaryBySlug(slug);
@@ -98,16 +111,31 @@ export default async function DiaryDetailPage({ params }: Props) {
         )}
 
         {/* Article Body */}
-        <div
-          className="article-body prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-soil-900 prose-p:text-soil-800 prose-li:text-soil-800"
-          dangerouslySetInnerHTML={{ __html: processBodyHtml(post.body) }}
-        />
+        {(() => {
+          const { main, appendix } = splitBody(post.body);
+          return (
+            <>
+              <div
+                className="article-body prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-soil-900 prose-p:text-soil-800 prose-li:text-soil-800"
+                dangerouslySetInnerHTML={{ __html: processBodyHtml(main) }}
+              />
 
-        {/* Claude Sensei Section */}
-        <ClaudeSensei
-          analysis={post.claudeAnalysis}
-          advice={post.claudeAdvice}
-        />
+              {/* Claude Sensei Section */}
+              <ClaudeSensei
+                analysis={post.claudeAnalysis}
+                advice={post.claudeAdvice}
+              />
+
+              {/* Appendix (version-up etc.) - below sensei */}
+              {appendix && (
+                <div
+                  className="article-body prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-soil-900 prose-p:text-soil-800 prose-li:text-soil-800 mt-8 pt-8 border-t border-tomato-100"
+                  dangerouslySetInnerHTML={{ __html: appendix }}
+                />
+              )}
+            </>
+          );
+        })()}
 
         {/* Prev / Next */}
         <nav className="mt-12 pt-8 border-t border-tomato-100 grid grid-cols-1 sm:grid-cols-2 gap-4">

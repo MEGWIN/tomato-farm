@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEGWIN軍団 募集 - 冒険者よ、集え！</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-dark: #0a0a1a;
+  --bg-panel: #1a1a3a;
+  --bg-panel-light: #2a2a5a;
+  --text-main: #e8e8ff;
+  --text-dim: #8888bb;
+  --accent-gold: #ffcc00;
+  --accent-blue: #4488ff;
+  --accent-red: #ff4444;
+  --accent-green: #44ff88;
+  --accent-purple: #aa44ff;
+  --border-color: #4444aa;
+  --sword-color: #ff6644;
+  --book-color: #44aaff;
+  --hero-color: #ffaa00;
+}
+
+html { font-size: 16px; }
+
+body {
+  background: var(--bg-dark);
+  color: var(--text-main);
+  font-family: 'DotGothic16', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Pixel border mixin via box-shadow */
+.pixel-border {
+  border: 3px solid var(--border-color);
+  box-shadow:
+    inset 3px 3px 0 rgba(255,255,255,0.1),
+    inset -3px -3px 0 rgba(0,0,0,0.3),
+    6px 6px 0 rgba(0,0,0,0.5);
+}
+
+/* Stars background */
+.stars {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 0;
+}
+.star {
+  position: absolute;
+  background: #fff;
+  width: 2px; height: 2px;
+  animation: twinkle 2s ease-in-out infinite alternate;
+}
+@keyframes twinkle {
+  0% { opacity: 0.2; }
+  100% { opacity: 1; }
+}
+
+/* Main container */
+.game-container {
+  position: relative;
+  z-index: 1;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Title screen */
+.title-screen {
+  text-align: center;
+  animation: fadeIn 1s ease;
+}
+.title-logo {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.2rem;
+  color: var(--accent-gold);
+  text-shadow: 0 0 20px rgba(255,204,0,0.5), 3px 3px 0 #aa6600;
+  line-height: 2;
+  margin-bottom: 10px;
+}
+.title-sub {
+  font-size: 1.5rem;
+  color: var(--text-main);
+  margin-bottom: 30px;
+  letter-spacing: 0.3em;
+}
+.press-start {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.7rem;
+  color: var(--accent-gold);
+  animation: blink 1s step-end infinite;
+  cursor: pointer;
+  padding: 15px 30px;
+  margin-top: 30px;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Dialog box */
+.dialog-box {
+  background: var(--bg-panel);
+  padding: 25px 30px;
+  width: 100%;
+  max-width: 650px;
+  min-height: 180px;
+  position: relative;
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dialog-speaker {
+  position: absolute;
+  top: -14px;
+  left: 20px;
+  background: var(--accent-gold);
+  color: var(--bg-dark);
+  padding: 3px 15px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.dialog-text {
+  font-size: 1.05rem;
+  line-height: 2;
+  margin-bottom: 15px;
+}
+
+.typewriter {
+  overflow: hidden;
+  white-space: pre-wrap;
+}
+
+/* HP Bar */
+.progress-bar-container {
+  width: 100%;
+  margin: 20px 0;
+  text-align: center;
+}
+.progress-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  color: var(--accent-gold);
+  margin-bottom: 8px;
+}
+.progress-bar {
+  width: 100%;
+  height: 16px;
+  background: var(--bg-dark);
+  border: 2px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+  transition: width 0.5s ease;
+  box-shadow: 0 0 10px rgba(68,255,136,0.3);
+}
+
+/* Input fields */
+.rpg-input {
+  width: 100%;
+  padding: 12px 15px;
+  background: var(--bg-dark);
+  border: 2px solid var(--border-color);
+  color: var(--text-main);
+  font-family: 'DotGothic16', monospace;
+  font-size: 1rem;
+  margin: 8px 0;
+  outline: none;
+  transition: border-color 0.3s;
+}
+.rpg-input:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 10px rgba(255,204,0,0.2);
+}
+.rpg-input::placeholder {
+  color: var(--text-dim);
+}
+
+.rpg-textarea {
+  width: 100%;
+  padding: 12px 15px;
+  background: var(--bg-dark);
+  border: 2px solid var(--border-color);
+  color: var(--text-main);
+  font-family: 'DotGothic16', monospace;
+  font-size: 1rem;
+  margin: 8px 0;
+  outline: none;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.3s;
+}
+.rpg-textarea:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 10px rgba(255,204,0,0.2);
+}
+
+/* Choice buttons */
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+  width: 100%;
+}
+.choice-btn {
+  background: var(--bg-panel-light);
+  border: 2px solid var(--border-color);
+  color: var(--text-main);
+  font-family: 'DotGothic16', monospace;
+  font-size: 1rem;
+  padding: 14px 20px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.choice-btn:hover {
+  background: var(--accent-gold);
+  color: var(--bg-dark);
+  border-color: var(--accent-gold);
+  transform: translateX(8px);
+}
+.choice-btn:hover .choice-arrow {
+  color: var(--bg-dark);
+}
+.choice-arrow {
+  color: var(--accent-gold);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  flex-shrink: 0;
+}
+.choice-btn.selected {
+  background: var(--accent-gold);
+  color: var(--bg-dark);
+  border-color: var(--accent-gold);
+}
+
+/* Multi-select choices */
+.choice-btn.multi {
+  padding-left: 45px;
+  position: relative;
+}
+.choice-btn.multi::before {
+  content: '□';
+  position: absolute;
+  left: 15px;
+  font-size: 1.1rem;
+}
+.choice-btn.multi.checked::before {
+  content: '■';
+  color: var(--accent-gold);
+}
+.choice-btn.multi.checked {
+  border-color: var(--accent-gold);
+  background: rgba(255,204,0,0.15);
+  color: var(--text-main);
+}
+
+/* Action button */
+.action-btn {
+  background: var(--accent-gold);
+  color: var(--bg-dark);
+  border: none;
+  font-family: 'DotGothic16', monospace;
+  font-size: 1.1rem;
+  font-weight: bold;
+  padding: 14px 40px;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: all 0.2s;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+}
+.action-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.5);
+}
+.action-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+}
+.action-btn:disabled {
+  background: var(--text-dim);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+}
+
+/* Character sprite area */
+.character-area {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+  font-size: 3rem;
+}
+
+/* Status display */
+.status-window {
+  background: var(--bg-panel);
+  border: 2px solid var(--border-color);
+  padding: 15px 20px;
+  margin: 15px 0;
+  width: 100%;
+  max-width: 650px;
+  font-size: 0.9rem;
+}
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(68,68,170,0.3);
+}
+.status-row:last-child { border-bottom: none; }
+.status-label { color: var(--text-dim); }
+.status-value { color: var(--accent-gold); }
+
+/* Class icons */
+.class-icon {
+  font-size: 2.5rem;
+  margin-bottom: 5px;
+}
+
+/* Completion screen */
+.completion {
+  text-align: center;
+}
+.completion .class-icon {
+  font-size: 4rem;
+  margin: 20px 0;
+  animation: bounce 0.5s ease infinite alternate;
+}
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10px); }
+}
+.fanfare {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.8rem;
+  color: var(--accent-gold);
+  text-shadow: 0 0 15px rgba(255,204,0,0.5);
+  margin: 15px 0;
+  line-height: 2;
+}
+
+/* Screen shake */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+.shake { animation: shake 0.3s ease; }
+
+/* Label */
+.field-label {
+  color: var(--accent-gold);
+  font-size: 0.9rem;
+  margin-top: 12px;
+  margin-bottom: 2px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .title-logo { font-size: 0.85rem; }
+  .dialog-box { padding: 20px 18px; }
+  .game-container { padding: 15px; }
+  .press-start { font-size: 0.6rem; }
+}
+
+/* Error */
+.error-text {
+  color: var(--accent-red);
+  font-size: 0.85rem;
+  margin-top: 5px;
+}
+
+/* Sending overlay */
+.sending-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(10,10,26,0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.sending-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.7rem;
+  color: var(--accent-gold);
+  animation: blink 0.8s step-end infinite;
+  margin-top: 20px;
+}
+.saving-icon {
+  font-size: 3rem;
+  animation: bounce 0.4s ease infinite alternate;
+}
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="game-container" id="app">
+  <!-- Title Screen -->
+  <div class="title-screen" id="titleScreen">
+    <div class="title-logo">
+      ━━━━━━━━━━━━━━━━━━<br>
+      ＭＥＧＷＩＮ軍団<br>
+      ━ 新メンバー募集 ━<br>
+      ━━━━━━━━━━━━━━━━━━
+    </div>
+    <div class="title-sub">〜 冒険者よ、集え！ 〜</div>
+    <div class="character-area">⚔️📖⚔️</div>
+    <div class="press-start" onclick="startGame()">▶ PRESS START ◀</div>
+  </div>
+
+  <!-- Game stages rendered dynamically -->
+  <div id="gameArea" style="display:none; width:100%;"></div>
+</div>
+
+<script>
+// ============================================
+// MEGWIN軍団 RPG募集フォーム
+// ============================================
+
+// Supabase config
+const SUPABASE_URL = 'https://ogyhlldqkjhwscgvrszu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9neWhsbGRxa2pod3NjZ3Zyc3p1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMDA0OTksImV4cCI6MjA4NTY3NjQ5OX0.KtFK1V1yfkDAHIawFgE3LT3L-PGwD0PXmCxVddQiN3w';
+
+// Notification email
+const NOTIFY_EMAIL = 'megwintv@gmail.com';
+
+// Application data
+let appData = {
+  name: '',
+  email: '',
+  jobClass: '',         // warrior / mage
+  // Warrior fields
+  streamPlatforms: [],
+  genres: [],
+  weeklyHours: '',
+  faceReveal: '',
+  channelUrl: '',
+  prWarrior: '',
+  // Mage fields
+  languages: [],
+  hardwareExp: [],
+  aiTools: [],
+  aiMonthlyCost: '',
+  githubUrl: '',
+  weeklyHoursMage: '',
+  prMage: '',
+  // Common
+  age: '',
+  location: '',
+  agencyStatus: '',
+};
+
+let currentStage = 0;
+const totalStages = 5;
+
+// Generate stars
+function generateStars() {
+  const container = document.getElementById('stars');
+  for (let i = 0; i < 80; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDelay = Math.random() * 2 + 's';
+    star.style.animationDuration = (1 + Math.random() * 2) + 's';
+    if (Math.random() > 0.7) {
+      star.style.width = '3px';
+      star.style.height = '3px';
+    }
+    container.appendChild(star);
+  }
+}
+generateStars();
+
+// Sound effect (simple beep using Web Audio)
+function playSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.value = 0.08;
+
+    if (type === 'select') {
+      osc.frequency.value = 800;
+      osc.start();
+      osc.stop(ctx.currentTime + 0.08);
+    } else if (type === 'confirm') {
+      osc.frequency.value = 523;
+      osc.start();
+      setTimeout(() => {
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        gain2.gain.value = 0.08;
+        osc2.frequency.value = 659;
+        osc2.start();
+        osc2.stop(ctx.currentTime + 0.08);
+      }, 100);
+      osc.stop(ctx.currentTime + 0.1);
+    } else if (type === 'fanfare') {
+      const notes = [523, 659, 784, 1047];
+      notes.forEach((freq, i) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g);
+        g.connect(ctx.destination);
+        g.gain.value = 0.06;
+        o.frequency.value = freq;
+        o.start(ctx.currentTime + i * 0.15);
+        o.stop(ctx.currentTime + i * 0.15 + 0.2);
+      });
+    }
+  } catch(e) {}
+}
+
+// Typewriter effect
+function typewrite(element, text, speed = 30) {
+  return new Promise(resolve => {
+    element.textContent = '';
+    let i = 0;
+    function type() {
+      if (i < text.length) {
+        element.textContent += text.charAt(i);
+        i++;
+        setTimeout(type, speed);
+      } else {
+        resolve();
+      }
+    }
+    type();
+  });
+}
+
+// Start game
+function startGame() {
+  playSound('confirm');
+  document.getElementById('titleScreen').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'flex';
+  document.getElementById('gameArea').style.flexDirection = 'column';
+  document.getElementById('gameArea').style.alignItems = 'center';
+  currentStage = 1;
+  renderStage(1);
+}
+
+// Progress bar
+function renderProgress() {
+  const pct = ((currentStage - 1) / (totalStages - 1)) * 100;
+  return `
+    <div class="progress-bar-container">
+      <div class="progress-label">QUEST PROGRESS</div>
+      <div class="progress-bar pixel-border" style="box-shadow:none;border-width:2px;">
+        <div class="progress-fill" style="width:${pct}%"></div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================
+// STAGE RENDERERS
+// ============================================
+
+function renderStage(stage) {
+  const area = document.getElementById('gameArea');
+  currentStage = stage;
+
+  switch(stage) {
+    case 1: renderStage1(area); break;
+    case 2: renderStage2(area); break;
+    case 3: renderStage3(area); break;
+    case 4: renderStage4(area); break;
+    case 5: renderStage5(area); break;
+    case 6: renderStage6(area); break;
+  }
+
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Stage 1: 冒険者登録
+function renderStage1(area) {
+  area.innerHTML = `
+    ${renderProgress()}
+    <div class="character-area">🏰</div>
+    <div class="dialog-box pixel-border">
+      <div class="dialog-speaker">ギルドマスターMEGWIN</div>
+      <div class="dialog-text" id="dialog1"></div>
+      <div id="form1" style="display:none;">
+        <div class="field-label">▶ 冒険者名（活動名）</div>
+        <input type="text" class="rpg-input" id="inputName" placeholder="なまえを いれてください" maxlength="50">
+        <div class="field-label">▶ 伝書鳩アドレス（メール）</div>
+        <input type="email" class="rpg-input" id="inputEmail" placeholder="densobato@example.com" maxlength="100">
+        <div class="field-label">▶ 年齢</div>
+        <input type="text" class="rpg-input" id="inputAge" placeholder="たとえば「25」" maxlength="3">
+        <div class="field-label">▶ 活動拠点（住んでいるエリア）</div>
+        <input type="text" class="rpg-input" id="inputLocation" placeholder="たとえば「東京」「大阪」" maxlength="50">
+        <div id="error1" class="error-text"></div>
+        <button class="action-btn" onclick="submitStage1()">つぎへ すすむ ▶</button>
+      </div>
+    </div>
+  `;
+
+  typewrite(document.getElementById('dialog1'),
+    'よく来たな、冒険者よ！\nオレはギルドマスターMEGWIN。\n新たな仲間を探している。\nまずは名前を教えてくれ！'
+  ).then(() => {
+    document.getElementById('form1').style.display = 'block';
+    document.getElementById('form1').style.animation = 'fadeIn 0.5s ease';
+  });
+}
+
+function submitStage1() {
+  const name = document.getElementById('inputName').value.trim();
+  const email = document.getElementById('inputEmail').value.trim();
+  const age = document.getElementById('inputAge').value.trim();
+  const location = document.getElementById('inputLocation').value.trim();
+
+  if (!name || !email) {
+    document.getElementById('error1').textContent = '⚠ 名前とメールアドレスは必須だ！';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('error1').textContent = '⚠ 正しいメールアドレスを入力してくれ！';
+    return;
+  }
+
+  appData.name = name;
+  appData.email = email;
+  appData.age = age;
+  appData.location = location;
+
+  playSound('confirm');
+  renderStage(2);
+}
+
+// Stage 2: 職業選択
+function renderStage2(area) {
+  area.innerHTML = `
+    ${renderProgress()}
+    <div class="character-area">⚔️📖</div>
+    <div class="dialog-box pixel-border">
+      <div class="dialog-speaker">ギルドマスターMEGWIN</div>
+      <div class="dialog-text" id="dialog2"></div>
+      <div id="choices2" style="display:none;">
+        <div class="choices">
+          <button class="choice-btn" onclick="selectClass('warrior')">
+            <span class="choice-arrow">▶</span>
+            <span>⚔️ 戦士の道（演者・配信者）</span>
+          </button>
+          <button class="choice-btn" onclick="selectClass('mage')">
+            <span class="choice-arrow">▶</span>
+            <span>📖 魔導士の道（エンジニア・裏方）</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  typewrite(document.getElementById('dialog2'),
+    `${appData.name}よ、冒険者登録完了だ！\n\nさて、目の前に2つの道がある...\nお前はどの道を選ぶ？`
+  ).then(() => {
+    document.getElementById('choices2').style.display = 'block';
+    document.getElementById('choices2').style.animation = 'fadeIn 0.5s ease';
+  });
+}
+
+function selectClass(cls) {
+  appData.jobClass = cls;
+  playSound('select');
+
+  // Highlight selected
+  document.querySelectorAll('#choices2 .choice-btn').forEach(btn => {
+    btn.classList.remove('selected');
+  });
+  event.currentTarget.classList.add('selected');
+
+  setTimeout(() => {
+    playSound('confirm');
+    if (cls === 'warrior') {
+      renderStage(3);
+    } else {
+      renderStage(4);
+    }
+  }, 500);
+}
+
+// Stage 3: 戦士の道（演者）
+function renderStage3(area) {
+  area.innerHTML = `
+    ${renderProgress()}
+    <div class="character-area">⚔️</div>
+    <div class="dialog-box pixel-border">
+      <div class="dialog-speaker">ギルドマスターMEGWIN</div>
+      <div class="dialog-text" id="dialog3"></div>
+      <div id="form3" style="display:none;">
+
+        <div class="field-label">▶ 配信経験のあるプラットフォーム（複数選択OK）</div>
+        <div class="choices" id="platforms">
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'streamPlatforms', 'YouTube')">
+            <span>YouTube</span>
+          </button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'streamPlatforms', 'Twitch')">
+            <span>Twitch</span>
+          </button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'streamPlatforms', 'TikTok Live')">
+            <span>TikTok Live</span>
+          </button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'streamPlatforms', 'ニコニコ')">
+            <span>ニコニコ</span>
+          </button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'streamPlatforms', '未経験（これから始めたい！）')">
+            <span>未経験（これから始めたい！）</span>
+          </button>
+        </div>
+
+        <div class="field-label">▶ 得意ジャンル（複数選択OK）</div>
+        <div class="choices" id="genres">
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'genres', 'トーク・雑談')">
+            <span>トーク・雑談</span>
+          </button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'genres', '企画・チャレンジ')">
+            <span>企画・チャレンジ</span>
+          </button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'genres', 'ゲーム実況')">
+            <span>ゲーム実況</span>
+          </button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'genres', '料理')">
+            <span>料理</span>
+          </button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'genres', '音楽・歌')">
+            <span>音楽・歌</span>
+          </button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'genres', 'MEGWIN')">
+            <span>MEGWIN</span>
+          </button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'genres', 'その他')">
+            <span>その他</span>
+          </button>
+        </div>
+
+        <div class="field-label">▶ 週にどのくらい活動できる？</div>
+        <div class="choices">
+          <button class="choice-btn" onclick="selectSingle(this, 'weeklyHours', '週1〜2日')">
+            <span class="choice-arrow">▶</span><span>週1〜2日</span>
+          </button>
+          <button class="choice-btn" onclick="selectSingle(this, 'weeklyHours', '週3〜4日')">
+            <span class="choice-arrow">▶</span><span>週3〜4日</span>
+          </button>
+          <button class="choice-btn" onclick="selectSingle(this, 'weeklyHours', 'ほぼ毎日')">
+            <span class="choice-arrow">▶</span><span>ほぼ毎日いけるぜ！</span>
+          </button>
+        </div>
+
+        <div class="field-label">▶ 顔出しはOK？</div>
+        <div class="choices">
+          <button class="choice-btn" onclick="selectSingle(this, 'faceReveal', 'OK')">
+            <span class="choice-arrow">▶</span><span>顔出しOK！</span>
+          </button>
+          <button class="choice-btn" onclick="selectSingle(this, 'faceReveal', 'NG')">
+            <span class="choice-arrow">▶</span><span>顔出しNG（声のみ・アバター等）</span>
+          </button>
+          <button class="choice-btn" onclick="selectSingle(this, 'faceReveal', '相談したい')">
+            <span class="choice-arrow">▶</span><span>相談して決めたい</span>
+          </button>
+        </div>
+
+        <div class="field-label">▶ チャンネル・SNSのURL（あれば）</div>
+        <input type="text" class="rpg-input" id="inputChannelUrl" placeholder="https://youtube.com/@xxx" maxlength="300">
+
+        <div class="field-label">▶ 自己PR・意気込み</div>
+        <textarea class="rpg-textarea" id="inputPrWarrior" placeholder="自由に語ってくれ！どんな配信がしたい？何が得意？"></textarea>
+
+        <div id="error3" class="error-text"></div>
+        <button class="action-btn" onclick="submitStage3()">つぎへ すすむ ▶</button>
+      </div>
+    </div>
+  `;
+
+  typewrite(document.getElementById('dialog3'),
+    `戦士の道を選んだか！\nお前の実力を見せてもらおう。\n以下の質問に答えてくれ！`
+  ).then(() => {
+    document.getElementById('form3').style.display = 'block';
+    document.getElementById('form3').style.animation = 'fadeIn 0.5s ease';
+  });
+}
+
+function toggleMulti(btn, field, value) {
+  playSound('select');
+  btn.classList.toggle('checked');
+  const idx = appData[field].indexOf(value);
+  if (idx > -1) {
+    appData[field].splice(idx, 1);
+  } else {
+    appData[field].push(value);
+  }
+}
+
+function selectSingle(btn, field, value) {
+  playSound('select');
+  appData[field] = value;
+  // Highlight within same group
+  const parent = btn.parentElement;
+  parent.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function submitStage3() {
+  appData.channelUrl = document.getElementById('inputChannelUrl').value.trim();
+  appData.prWarrior = document.getElementById('inputPrWarrior').value.trim();
+
+  if (!appData.prWarrior) {
+    document.getElementById('error3').textContent = '⚠ 自己PRは必ず書いてくれ！';
+    return;
+  }
+
+  playSound('confirm');
+  renderStage(5);
+}
+
+// Stage 4: 魔導士の道（エンジニア）
+function renderStage4(area) {
+  area.innerHTML = `
+    ${renderProgress()}
+    <div class="character-area">📖</div>
+    <div class="dialog-box pixel-border">
+      <div class="dialog-speaker">ギルドマスターMEGWIN</div>
+      <div class="dialog-text" id="dialog4"></div>
+      <div id="form4" style="display:none;">
+
+        <div class="field-label">▶ 使える言語・技術（複数選択OK）</div>
+        <div class="choices">
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'languages', 'Python')"><span>Python</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'languages', 'JavaScript/TypeScript')"><span>JavaScript / TypeScript</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'languages', 'C/C++')"><span>C / C++</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'languages', 'HTML/CSS')"><span>HTML / CSS</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'languages', 'React/Next.js')"><span>React / Next.js</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'languages', 'その他')"><span>その他</span></button>
+        </div>
+
+        <div class="field-label">▶ ハードウェア経験（複数選択OK）</div>
+        <div class="choices">
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'hardwareExp', 'ESP32/ESP8266')"><span>ESP32 / ESP8266</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'hardwareExp', 'Raspberry Pi')"><span>Raspberry Pi</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'hardwareExp', 'Arduino')"><span>Arduino</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'hardwareExp', '電子工作全般')"><span>電子工作全般</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'hardwareExp', '未経験（ソフトウェアのみ）')"><span>未経験（ソフトウェアのみ）</span></button>
+        </div>
+
+        <div class="field-label">▶ 現在使っているAI（複数選択OK）</div>
+        <div class="choices">
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'aiTools', 'ChatGPT')"><span>ChatGPT</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'aiTools', 'Claude')"><span>Claude</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'aiTools', 'Gemini')"><span>Gemini</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'aiTools', 'GitHub Copilot')"><span>GitHub Copilot</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'aiTools', 'Cursor')"><span>Cursor</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'aiTools', 'その他')"><span>その他</span></button>
+          <button class="choice-btn multi" onclick="toggleMulti(this, 'aiTools', '使っていない')"><span>使っていない</span></button>
+        </div>
+
+        <div class="field-label">▶ AIに月いくら課金してる？</div>
+        <div class="choices">
+          <button class="choice-btn" onclick="selectSingle(this, 'aiMonthlyCost', '0円（無料のみ）')">
+            <span class="choice-arrow">▶</span><span>0円（無料のみ）</span>
+          </button>
+          <button class="choice-btn" onclick="selectSingle(this, 'aiMonthlyCost', '〜3,000円')">
+            <span class="choice-arrow">▶</span><span>〜3,000円</span>
+          </button>
+          <button class="choice-btn" onclick="selectSingle(this, 'aiMonthlyCost', '3,000〜10,000円')">
+            <span class="choice-arrow">▶</span><span>3,000〜10,000円</span>
+          </button>
+          <button class="choice-btn" onclick="selectSingle(this, 'aiMonthlyCost', '10,000円以上')">
+            <span class="choice-arrow">▶</span><span>10,000円以上（ガチ勢）</span>
+          </button>
+        </div>
+
+        <div class="field-label">▶ 週にどのくらい活動できる？</div>
+        <div class="choices">
+          <button class="choice-btn" onclick="selectSingle(this, 'weeklyHoursMage', '週1〜2日')">
+            <span class="choice-arrow">▶</span><span>週1〜2日</span>
+          </button>
+          <button class="choice-btn" onclick="selectSingle(this, 'weeklyHoursMage', '週3〜4日')">
+            <span class="choice-arrow">▶</span><span>週3〜4日</span>
+          </button>
+          <button class="choice-btn" onclick="selectSingle(this, 'weeklyHoursMage', 'ほぼ毎日')">
+            <span class="choice-arrow">▶</span><span>ほぼ毎日いけるぜ！</span>
+          </button>
+        </div>
+
+        <div class="field-label">▶ GitHub・ポートフォリオURL（あれば）</div>
+        <input type="text" class="rpg-input" id="inputGithubUrl" placeholder="https://github.com/xxx" maxlength="300">
+
+        <div class="field-label">▶ 自己PR・意気込み</div>
+        <textarea class="rpg-textarea" id="inputPrMage" placeholder="どんな技術が得意？ギミックストリームでやりたいことは？"></textarea>
+
+        <div id="error4" class="error-text"></div>
+        <button class="action-btn" onclick="submitStage4()">つぎへ すすむ ▶</button>
+      </div>
+    </div>
+  `;
+
+  typewrite(document.getElementById('dialog4'),
+    `魔導士の道を選んだか！\n技術の力で配信を支える...最高だ！\n以下の質問に答えてくれ！`
+  ).then(() => {
+    document.getElementById('form4').style.display = 'block';
+    document.getElementById('form4').style.animation = 'fadeIn 0.5s ease';
+  });
+}
+
+function submitStage4() {
+  appData.githubUrl = document.getElementById('inputGithubUrl').value.trim();
+  appData.prMage = document.getElementById('inputPrMage').value.trim();
+
+  if (!appData.prMage) {
+    document.getElementById('error4').textContent = '⚠ 自己PRは必ず書いてくれ！';
+    return;
+  }
+
+  playSound('confirm');
+  renderStage(5);
+}
+
+// Stage 5: 最終確認
+function renderStage5(area) {
+  const classNames = { warrior: '戦士', mage: '魔導士' };
+  const classIcons = { warrior: '⚔️', mage: '📖' };
+  const cn = classNames[appData.jobClass];
+  const ci = classIcons[appData.jobClass];
+
+  let statusRows = `
+    <div class="status-row"><span class="status-label">名前</span><span class="status-value">${appData.name}</span></div>
+    <div class="status-row"><span class="status-label">メール</span><span class="status-value">${appData.email}</span></div>
+    <div class="status-row"><span class="status-label">年齢</span><span class="status-value">${appData.age || '未回答'}</span></div>
+    <div class="status-row"><span class="status-label">拠点</span><span class="status-value">${appData.location || '未回答'}</span></div>
+    <div class="status-row"><span class="status-label">職業</span><span class="status-value">${ci} ${cn}</span></div>
+  `;
+
+  if (appData.jobClass === 'warrior') {
+    statusRows += `
+      <div class="status-row"><span class="status-label">配信経験</span><span class="status-value">${appData.streamPlatforms.join(', ') || '未選択'}</span></div>
+      <div class="status-row"><span class="status-label">得意ジャンル</span><span class="status-value">${appData.genres.join(', ') || '未選択'}</span></div>
+      <div class="status-row"><span class="status-label">活動頻度</span><span class="status-value">${appData.weeklyHours || '未選択'}</span></div>
+      <div class="status-row"><span class="status-label">顔出し</span><span class="status-value">${appData.faceReveal || '未選択'}</span></div>
+      <div class="status-row"><span class="status-label">チャンネルURL</span><span class="status-value">${appData.channelUrl || 'なし'}</span></div>
+    `;
+  }
+  if (appData.jobClass === 'mage') {
+    statusRows += `
+      <div class="status-row"><span class="status-label">言語・技術</span><span class="status-value">${appData.languages.join(', ') || '未選択'}</span></div>
+      <div class="status-row"><span class="status-label">ハードウェア</span><span class="status-value">${appData.hardwareExp.join(', ') || '未選択'}</span></div>
+      <div class="status-row"><span class="status-label">使用AI</span><span class="status-value">${appData.aiTools.join(', ') || '未選択'}</span></div>
+      <div class="status-row"><span class="status-label">AI月額課金</span><span class="status-value">${appData.aiMonthlyCost || '未選択'}</span></div>
+      <div class="status-row"><span class="status-label">活動頻度</span><span class="status-value">${appData.weeklyHoursMage || '未選択'}</span></div>
+      <div class="status-row"><span class="status-label">GitHub</span><span class="status-value">${appData.githubUrl || 'なし'}</span></div>
+    `;
+  }
+
+  // 事務所所属確認も追加
+  area.innerHTML = `
+    ${renderProgress()}
+    <div class="character-area">${ci}</div>
+    <div class="dialog-box pixel-border">
+      <div class="dialog-speaker">ギルドマスターMEGWIN</div>
+      <div class="dialog-text" id="dialog5"></div>
+      <div id="form5" style="display:none;">
+        <div class="field-label">▶ 現在、事務所・MCNに所属している？</div>
+        <div class="choices">
+          <button class="choice-btn" onclick="selectSingle(this, 'agencyStatus', '所属なし（フリー）')">
+            <span class="choice-arrow">▶</span><span>所属なし（フリー）</span>
+          </button>
+          <button class="choice-btn" onclick="selectSingle(this, 'agencyStatus', '所属あり')">
+            <span class="choice-arrow">▶</span><span>所属あり（要相談）</span>
+          </button>
+        </div>
+
+        <div class="status-window" style="margin-top:20px;">
+          <div style="color:var(--accent-gold);margin-bottom:10px;text-align:center;">━ 冒険の書 ━</div>
+          ${statusRows}
+        </div>
+
+        <div style="text-align:center;margin-top:20px;">
+          <div style="color:var(--accent-gold);margin-bottom:10px;">この内容で冒険の書に記録するか？</div>
+          <button class="action-btn" onclick="submitFinal()" id="finalBtn">⚔️ 記録する！ ⚔️</button>
+          <div style="margin-top:10px;">
+            <span style="color:var(--text-dim);cursor:pointer;font-size:0.9rem;" onclick="renderStage(2)">◀ 最初からやり直す</span>
+          </div>
+        </div>
+        <div id="error5" class="error-text" style="text-align:center;"></div>
+      </div>
+    </div>
+  `;
+
+  typewrite(document.getElementById('dialog5'),
+    `最後の確認だ、${appData.name}よ！\n冒険の書を確認してくれ。`
+  ).then(() => {
+    document.getElementById('form5').style.display = 'block';
+    document.getElementById('form5').style.animation = 'fadeIn 0.5s ease';
+  });
+}
+
+// Submit to Supabase
+async function submitFinal() {
+  const btn = document.getElementById('finalBtn');
+  btn.disabled = true;
+  btn.textContent = '記録中...';
+
+  // Show saving overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'sending-overlay';
+  overlay.innerHTML = `
+    <div class="saving-icon">📜</div>
+    <div class="sending-text">冒険の書に記録中...</div>
+  `;
+  document.body.appendChild(overlay);
+
+  try {
+    // Build record
+    const classNames = { warrior: '戦士（演者）', mage: '魔導士（エンジニア）' };
+    const record = {
+      name: appData.name,
+      email: appData.email,
+      age: appData.age || null,
+      location: appData.location || null,
+      job_class: appData.jobClass,
+      job_class_label: classNames[appData.jobClass],
+      stream_platforms: appData.streamPlatforms.length > 0 ? appData.streamPlatforms : null,
+      genres: appData.genres.length > 0 ? appData.genres : null,
+      weekly_hours: appData.weeklyHours || appData.weeklyHoursMage || null,
+      face_reveal: appData.faceReveal || null,
+      channel_url: appData.channelUrl || null,
+      languages: appData.languages.length > 0 ? appData.languages : null,
+      hardware_exp: appData.hardwareExp.length > 0 ? appData.hardwareExp : null,
+      ai_tools: appData.aiTools.length > 0 ? appData.aiTools : null,
+      ai_monthly_cost: appData.aiMonthlyCost || null,
+      github_url: appData.githubUrl || null,
+      weekly_hours_mage: appData.weeklyHoursMage || null,
+      pr_warrior: appData.prWarrior || null,
+      pr_mage: appData.prMage || null,
+      agency_status: appData.agencyStatus || null,
+      applied_at: new Date().toISOString()
+    };
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/gundan_applications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(record)
+    });
+
+    if (!res.ok) {
+      throw new Error(`Supabase error: ${res.status}`);
+    }
+
+    // Send email notification (non-blocking, failure won't affect form submission)
+    const classLabels = { warrior: '戦士（演者）', mage: '魔導士（エンジニア）' };
+    try {
+      await fetch(`${SUPABASE_URL}/functions/v1/send-gundan-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: appData.name,
+          email: appData.email,
+          jobClass: appData.jobClass,
+          jobClassLabel: classLabels[appData.jobClass],
+          age: appData.age,
+          location: appData.location,
+          weeklyHours: appData.weeklyHours || appData.weeklyHoursMage,
+          agencyStatus: appData.agencyStatus,
+          pr: appData.prWarrior || appData.prMage,
+          channelUrl: appData.channelUrl,
+          githubUrl: appData.githubUrl,
+          streamPlatforms: appData.streamPlatforms.join(', '),
+          genres: appData.genres.join(', '),
+          faceReveal: appData.faceReveal,
+          languages: appData.languages.join(', '),
+          hardwareExp: appData.hardwareExp.join(', '),
+          aiTools: appData.aiTools.join(', '),
+          aiMonthlyCost: appData.aiMonthlyCost,
+        })
+      });
+    } catch(emailErr) {
+      console.warn('Email notification failed (non-critical):', emailErr);
+    }
+
+    // Remove overlay
+    overlay.remove();
+
+    playSound('fanfare');
+    renderStage(6);
+
+  } catch(err) {
+    console.error(err);
+    overlay.remove();
+    btn.disabled = false;
+    btn.textContent = '⚔️ 記録する！ ⚔️';
+    document.getElementById('error5').textContent = '⚠ 記録に失敗した...もう一度試してくれ！';
+  }
+}
+
+// Stage 6: 完了画面
+function renderStage6(area) {
+  const classIcons = { warrior: '⚔️', mage: '📖' };
+  const classNames = { warrior: '戦士', mage: '魔導士' };
+  const ci = classIcons[appData.jobClass];
+  const cn = classNames[appData.jobClass];
+
+  area.innerHTML = `
+    ${renderProgress()}
+    <div class="completion">
+      <div class="class-icon">${ci}</div>
+      <div class="fanfare">
+        ✦ 冒険の書に記録した！ ✦<br><br>
+        ${cn}「${appData.name}」の<br>
+        応募を受け付けたぞ！
+      </div>
+      <div class="dialog-box pixel-border" style="text-align:left;">
+        <div class="dialog-speaker">ギルドマスターMEGWIN</div>
+        <div class="dialog-text">
+          よくぞここまで来た、${appData.name}よ！<br><br>
+          お前の応募はしっかり届いている。<br>
+          ギルドマスターMEGWINが内容を確認して、<br>
+          選ばれし者には伝書鳩（メール）で<br>
+          連絡するからな！<br><br>
+          一緒に登録者100万人の冒険に出よう！<br>
+          待ってるぜ、MAJIDE！！
+        </div>
+      </div>
+      <div style="margin-top:30px;color:var(--text-dim);font-size:0.85rem;">
+        ※ このページを閉じても大丈夫です。応募内容は保存されています。
+      </div>
+    </div>
+  `;
+
+  // Confetti-like pixel effect
+  for (let i = 0; i < 30; i++) {
+    const pixel = document.createElement('div');
+    pixel.style.cssText = `
+      position: fixed;
+      width: ${4 + Math.random()*6}px;
+      height: ${4 + Math.random()*6}px;
+      background: ${['#ffcc00','#ff4444','#44ff88','#4488ff','#aa44ff'][Math.floor(Math.random()*5)]};
+      left: ${Math.random()*100}%;
+      top: -10px;
+      z-index: 50;
+      pointer-events: none;
+    `;
+    document.body.appendChild(pixel);
+    const duration = 2000 + Math.random() * 2000;
+    pixel.animate([
+      { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+      { transform: `translateY(${window.innerHeight + 50}px) rotate(${360 + Math.random()*360}deg)`, opacity: 0 }
+    ], { duration, easing: 'ease-in' }).onfinish = () => pixel.remove();
+  }
+}
+</script>
+</body>
+</html>
