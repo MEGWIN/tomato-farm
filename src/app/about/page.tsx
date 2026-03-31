@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
+import AffiliateTools from "@/components/home/AffiliateTools";
 
 export const metadata: Metadata = {
-  title: "About",
+  title: "About Us",
   description:
-    "「AI×素人＝プチトマト農家への道」プロジェクトについて。MEGWINとChloe先生の紹介。",
+    "MEGWINとAIが本気で遊ぶプロジェクト。インタラクティブ配信「Gimmick Stream」とAI監督トマト水耕栽培の紹介。",
 };
 
 export default function AboutPage() {
@@ -14,32 +16,76 @@ export default function AboutPage() {
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="font-heading font-black text-4xl md:text-5xl text-soil-900 mb-4">
-            About This Project
+            About Us
           </h1>
           <p className="text-soil-800/70 text-lg">
-            AI時代の新しい農業の形を、素人が本気で目指す
+            MEGWINとAIが本気で遊ぶプロジェクトたち
           </p>
         </div>
 
         {/* What is this */}
         <section className="mb-16">
-          <div className="bg-gradient-to-r from-tomato-500 to-orange-500 text-white rounded-2xl p-8 md:p-12 shadow-lg">
-            <h2 className="font-heading font-black text-2xl md:text-3xl mb-4">
-              🍅 このプロジェクトとは？
-            </h2>
-            <p className="text-white/90 leading-relaxed text-lg">
-              水耕栽培完全素人の<strong>MEGWIN</strong>が、
-              AI（<strong>Chloe先生</strong>）の分析・予測・アドバイスを活用して
-              プチトマトの水耕栽培に挑戦するリアルドキュメンタリーブログです。
-            </p>
-            <p className="text-white/90 leading-relaxed text-lg mt-4">
-              ESP32で自動化、Discord BotでAIが催促、写真からAIが診断 ―
-              他にない「<strong>AIが監督するスマート農場</strong>」を実現します。
-            </p>
-            <p className="text-white/90 leading-relaxed text-lg mt-4">
-              <strong>ギミックストリーム</strong>（gimmickstream.com）チームの一環として、
-              視聴者のアクションで物理デバイスが動くインタラクティブ配信の延長にある企画です。
-            </p>
+          <h2 className="font-heading font-black text-3xl text-soil-900 text-center mb-10">
+            今動いてるプロジェクト
+          </h2>
+          <div className="space-y-8">
+            {/* Gimmick Stream */}
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl p-8 md:p-12 shadow-lg">
+              <h3 className="font-heading font-black text-2xl md:text-3xl mb-6">
+                🎮 Gimmick Stream
+              </h3>
+              <p className="text-white/90 leading-relaxed text-lg">
+                今までできなかった視聴者とのインタラクティブライブを実現するプロジェクト。
+              </p>
+              <p className="text-white/90 leading-relaxed text-lg mt-4">
+                これまでは、オンデマンド動画の中で軍団員がMEGWINに何かをする――それが限界だった。
+                でもAIの力で、視聴者が直接MEGWINに何かできるようになって、その限界を突破した。
+                リアルタイムでMEGWINをいじり倒せるギミックを、これからもどんどん開発していく。
+              </p>
+              <p className="text-white/90 leading-relaxed text-lg mt-4">
+                ただ、MEGWINは過激なのが好きだから体力が持たない。
+                ここを新しい軍団員でなんとかしたい。
+              </p>
+              <div className="flex flex-wrap gap-4 mt-8">
+                <a
+                  href="https://gimmickstream.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-white text-purple-700 font-bold px-6 py-3 rounded-full hover:bg-white/90 transition"
+                >
+                  gimmickstream.com
+                </a>
+                <Link
+                  href="/form/gundan"
+                  className="inline-block bg-yellow-400 text-purple-900 font-bold px-6 py-3 rounded-full hover:bg-yellow-300 transition"
+                >
+                  軍団員に応募する
+                </Link>
+              </div>
+            </div>
+
+            {/* トマトプロジェクト */}
+            <div className="bg-gradient-to-r from-tomato-500 to-orange-500 text-white rounded-2xl p-8 md:p-12 shadow-lg">
+              <h3 className="font-heading font-black text-2xl md:text-3xl mb-6">
+                🍅 トマトプロジェクト
+              </h3>
+              <p className="text-white/90 leading-relaxed text-lg">
+                GimmickStreamでよく水のギミックを作っていたMEGWINが、
+                「もっとこの水を活かせないかな」ということで始めた水耕栽培プロジェクト。
+                「<strong>水のMEGWIN</strong>」という異名の延長線上にある。
+              </p>
+              <p className="text-white/90 leading-relaxed text-lg mt-4">
+                ただ、MEGWINは面倒くさがりで飽きっぽくて、はっきり言って農業には向いてない。
+                だから<strong>Chloe先生</strong>が必要。
+                リアルタイムでMEGWINにどんどん指示を出して、
+                基本的にはMEGWINが何も考えなくてもトマトが育っていく――それが理想。
+              </p>
+              <ul className="text-white/90 text-lg mt-4 space-y-1 list-disc list-inside">
+                <li>ESP32で栽培環境を自動化</li>
+                <li>Discord BotでAIが世話を催促</li>
+                <li>写真からAIが生育状態を診断</li>
+              </ul>
+            </div>
           </div>
         </section>
 
@@ -122,6 +168,9 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
+
+        {/* 使ってる道具 */}
+        <AffiliateTools />
 
         {/* Tech Stack */}
         <section className="mb-16">

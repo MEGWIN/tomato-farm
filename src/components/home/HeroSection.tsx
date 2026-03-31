@@ -37,26 +37,26 @@ export default function HeroSection() {
 
         {/* Subtitle */}
         <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-10 leading-relaxed">
-          YouTubeパイオニア<strong>MEGWIN</strong>の公式サイト。
-          <br className="hidden sm:inline" />
-          プログラミング×電子工作×ライブ配信で
-          <br className="hidden sm:inline" />
-          「体験型ストリーミング」をやっていくぜMAJIDE！
+          <span className="font-heading font-bold text-sunshine-300 text-2xl md:text-3xl">AI×インタラクティブ</span>
+          <br />
+          今までできなかったことをAIとやる。
+          <br />
+          それが<strong>MEGWIN</strong>だ！
         </p>
 
         {/* CTA */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
+            href="/about"
+            className="inline-flex items-center justify-center gap-2 bg-white text-tomato-600 font-heading font-bold text-lg px-8 py-4 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+          >
+            About Us
+          </Link>
+          <Link
             href="/diary"
             className="inline-flex items-center justify-center gap-2 bg-white text-tomato-600 font-heading font-bold text-lg px-8 py-4 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all"
           >
             🍅 栽培日記を読む
-          </Link>
-          <Link
-            href="/about"
-            className="inline-flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm text-white font-heading font-bold text-lg px-8 py-4 rounded-full border-2 border-white/30 hover:bg-white/20 transition-all"
-          >
-            MEGWINとは？
           </Link>
         </div>
       </div>
