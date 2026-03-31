@@ -92,7 +92,7 @@ export default function AboutPage() {
         {/* Team */}
         <section className="mb-16">
           <h2 className="font-heading font-black text-3xl text-soil-900 text-center mb-10">
-            チームメンバー
+            MEGWIN軍団メンバー
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* MEGWIN */}
@@ -110,7 +110,7 @@ export default function AboutPage() {
                 MEGWIN
               </h3>
               <p className="text-tomato-500 font-bold text-sm mb-4">
-                YouTubeパイオニア / ギミックストリーム共同代表
+                YouTubeのパイオニア / アホ
               </p>
               <p className="text-soil-800/70 text-sm leading-relaxed">
                 ２０年以上のキャリアを持つYouTuber・ストリーマー。
@@ -133,10 +133,10 @@ export default function AboutPage() {
                 />
               </div>
               <h3 className="font-heading font-black text-xl text-soil-900 mb-2">
-                Chloe先生
+                Chloe先生(AI)
               </h3>
               <p className="text-leaf-600 font-bold text-sm mb-4">
-                AI栽培アドバイザー / 監督 / 記事生成
+                AI栽培アドバイザー
               </p>
               <p className="text-soil-800/70 text-sm leading-relaxed">
                 Anthropic社のAI。写真から成長分析、気象データから未来予測、
@@ -164,6 +164,21 @@ export default function AboutPage() {
               <p className="text-soil-800/70 text-sm leading-relaxed">
                 軍団オーディションで選ばれ、いまこっそり日本に来ている。
                 好きな食べ物は牛肉のステーキ。焼き加減はミディアムベア。
+              </p>
+            </div>
+            {/* ○○WIN */}
+            <div className="bg-white rounded-2xl p-8 shadow-md border border-purple-200/50 text-center">
+              <div className="w-24 h-24 rounded-full bg-purple-100 mx-auto mb-4 flex items-center justify-center">
+                <span className="text-5xl font-heading font-black text-purple-400">？</span>
+              </div>
+              <h3 className="font-heading font-black text-xl text-soil-900 mb-2">
+                新軍団員
+              </h3>
+              <p className="text-purple-500 font-bold text-sm mb-4">
+                Mと馬が合う奴
+              </p>
+              <p className="text-soil-800/70 text-sm leading-relaxed">
+                マニュアルなんて存在しない！MEGWINは何も教えてくれない！指をくわえて見てるだけのお前は必要ない！お前は、なんでここに来ようとしているんだ？明確な意志、それを掲げろ！
               </p>
             </div>
           </div>

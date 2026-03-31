@@ -14,17 +14,17 @@ export default function Home() {
       {/* 軍団募集セクション - RPG風 */}
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="relative bg-gradient-to-br from-purple-900 to-indigo-900 rounded-2xl p-8 md:p-12 text-center overflow-hidden shadow-lg">
+          <div className="relative bg-gradient-to-br from-purple-400 to-indigo-400 rounded-2xl p-8 md:p-12 text-center overflow-hidden shadow-lg">
             {/* スキャンライン */}
             <div className="absolute inset-0 pointer-events-none rounded-2xl" style={{
               background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px)'
             }} />
             <div className="relative z-10">
-              <p className="text-purple-300 text-sm mb-4">2026年内YouTube登録者 再100万人を目指して</p>
-              <h2 className="font-heading font-black text-2xl md:text-4xl mb-2 text-sunshine-300" style={{ textShadow: '0 0 20px rgba(255,204,0,0.3)' }}>
+              <p className="text-purple-900/70 text-sm mb-4">2026年内YouTube登録者 再100万人を目指して</p>
+              <h2 className="font-heading font-black text-2xl md:text-4xl mb-2 text-white" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
                 オレとの冒険に出るのは誰だ
               </h2>
-              <p className="font-heading font-black text-xl md:text-2xl text-white/90 mb-6">
+              <p className="font-heading font-black text-xl md:text-2xl text-purple-900 mb-6">
                 MEGWIN軍団募集中！
               </p>
               <div className="text-4xl mb-6">⚔️📖⚔️</div>

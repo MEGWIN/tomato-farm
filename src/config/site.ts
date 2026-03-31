@@ -11,6 +11,7 @@ export const siteConfig = {
     { label: "トップ", href: "/" },
     { label: "栽培日記", href: "/diary" },
     { label: "About", href: "/about" },
+    { label: "お問い合わせ", href: "/contact" },
   ],
   social: {
     youtube: "https://www.youtube.com/megwin",
