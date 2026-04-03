@@ -55,7 +55,7 @@ export default function DiaryCard({ post }: { post: DiaryPost }) {
       </div>
 
       <div className="p-5">
-        {/* Category & Day */}
+        {/* Category */}
         <div className="flex items-center gap-2 mb-3">
           <span
             className={`text-xs font-bold px-3 py-1 rounded-full ${
@@ -63,9 +63,6 @@ export default function DiaryCard({ post }: { post: DiaryPost }) {
             }`}
           >
             {CATEGORY_LABELS[post.category[0]]}
-          </span>
-          <span className="text-xs font-bold text-tomato-500 bg-tomato-50 px-3 py-1 rounded-full">
-            Day {post.day}
           </span>
         </div>
 

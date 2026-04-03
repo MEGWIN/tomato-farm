@@ -55,8 +55,10 @@ export default async function CultivationDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-white rounded-2xl p-5 border border-tomato-100/50 shadow-sm text-center">
             <p className="text-sm font-bold text-soil-800/50 mb-1">栽培日数</p>
-            <p className="font-heading font-black text-3xl text-tomato-500">
-              {latestLog ? `Day ${latestLog.day_number}` : "--"}
+            <p className="font-heading font-black text-3xl text-leaf-600">
+              {latestLog ? (
+                <><span className="text-2xl">🌱</span> {latestLog.day_number}日目</>
+              ) : "--"}
             </p>
           </div>
           <div className="bg-white rounded-2xl p-5 border border-tomato-100/50 shadow-sm text-center">

@@ -163,7 +163,7 @@ JSONのみを出力:`.trim();
       }, 180000);
 
       exec(
-        `type "${tmpFile}" | claude -p`,
+        `type "${tmpFile}" | claude -p --allowedTools "Read"`,
         {
           env: cleanEnv,
           maxBuffer: 1024 * 1024,
@@ -292,7 +292,7 @@ JSONのみを出力:`.trim();
       }, 180000);
 
       exec(
-        `type "${tmpFile}" | claude -p`,
+        `type "${tmpFile}" | claude -p --allowedTools "Read"`,
         {
           env: cleanEnv,
           maxBuffer: 1024 * 1024,
