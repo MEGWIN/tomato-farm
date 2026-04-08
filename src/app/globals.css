@@ -85,8 +85,14 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Single image in article - prevent portrait images from being too tall */
 .article-body > figure img {
+  width: auto;
   max-height: 480px;
   border-radius: 0.75rem;
+}
+
+/* All article images - override microCMS width/height attributes to prevent distortion */
+.article-body figure img {
+  image-orientation: from-image;
 }
 
 /* Hero gradient animation */
