@@ -30,6 +30,11 @@ const commands = [
     options: [],
   },
   {
+    name: "push-stats",
+    description: "購読者数・予約件数・直近送信を表示",
+    options: [],
+  },
+  {
     name: "push-cancel",
     description: "予約中のPushをキャンセル",
     options: [

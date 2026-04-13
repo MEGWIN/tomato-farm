@@ -9,11 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@noble/ed25519": "^3.1.0",
-    "@noble/hashes": "^2.2.0",
     "@supabase/supabase-js": "^2.100.1",
     "@tailwindcss/typography": "^0.5.19",
-    "discord-interactions": "^4.4.0",
     "microcms-js-sdk": "^3.3.0",
     "next": "16.2.1",
     "react": "19.2.4",

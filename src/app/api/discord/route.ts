@@ -66,71 +66,17 @@ function reply(content: string, ephemeral = true) {
   });
 }
 
-export async function GET() {
-  return NextResponse.json({
-    publicKeySet: Boolean(PUBLIC_KEY),
-    publicKeyLen: PUBLIC_KEY?.length || 0,
-    publicKeyHead: PUBLIC_KEY ? PUBLIC_KEY.slice(0, 8) : null,
-  });
-}
-
-export async function HEAD() {
-  return new NextResponse(null, { status: 200 });
-}
-
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, GET, HEAD, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, X-Signature-Ed25519, X-Signature-Timestamp",
-    },
-  });
-}
-
 export async function POST(req: Request) {
   const signature = req.headers.get("x-signature-ed25519");
   const timestamp = req.headers.get("x-signature-timestamp");
   const rawBody = await req.text();
 
-  console.log("discord POST:", {
-    hasSignature: Boolean(signature),
-    hasTimestamp: Boolean(timestamp),
-    sigLen: signature?.length,
-    bodyLen: rawBody.length,
-    bodyHead: rawBody.slice(0, 80),
-    pubKeyLen: PUBLIC_KEY?.length,
-  });
-
   if (!signature || !timestamp) {
     return new NextResponse("missing headers", { status: 401 });
   }
 
-  const result = verify(signature, timestamp, rawBody);
-
-  // デバッグログ保存（function終了前に必ず完了させる）
-  await supabaseAdmin.from("discord_debug_logs").insert({
-    sig: signature,
-    ts: timestamp,
-    body: rawBody,
-    pubkey_head: PUBLIC_KEY?.slice(0, 16) || null,
-    verify_result: result.ok,
-    verify_err: result.err || null,
-  });
-
-  if (!result.ok) {
-    return new NextResponse(
-      JSON.stringify({
-        error: "invalid request signature",
-        debugErr: result.err,
-        sigLen: signature.length,
-        tsLen: timestamp.length,
-        bodyLen: rawBody.length,
-        pubKeyLen: PUBLIC_KEY.length,
-      }),
-      { status: 401, headers: { "content-type": "application/json" } },
-    );
+  if (!verify(signature, timestamp, rawBody).ok) {
+    return new NextResponse("invalid request signature", { status: 401 });
   }
 
   const interaction = JSON.parse(rawBody) as Interaction;
@@ -197,6 +143,31 @@ export async function POST(req: Request) {
     } catch (err) {
       return reply(`⚠️ 送信失敗: ${err instanceof Error ? err.message : "unknown"}`);
     }
+  }
+
+  if (cmd === "push-stats") {
+    const [{ count: subCount }, { count: pendingCount }, { data: lastSent }] = await Promise.all([
+      supabaseAdmin.from("push_subscriptions").select("*", { count: "exact", head: true }),
+      supabaseAdmin
+        .from("scheduled_pushes")
+        .select("*", { count: "exact", head: true })
+        .is("sent_at", null),
+      supabaseAdmin
+        .from("scheduled_pushes")
+        .select("title, sent_at, sent_count, failed_count")
+        .not("sent_at", "is", null)
+        .order("sent_at", { ascending: false })
+        .limit(1),
+    ]);
+
+    const last = lastSent?.[0];
+    const lastLine = last
+      ? `\n📨 直近送信: **${last.title}** (${new Date(last.sent_at!).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}) — ${last.sent_count}/${(last.sent_count ?? 0) + (last.failed_count ?? 0)} 成功`
+      : "";
+
+    return reply(
+      `📊 統計MAJIDE\n👥 購読者: **${subCount ?? 0}人**\n📅 予約待ち: **${pendingCount ?? 0}件**${lastLine}`,
+    );
   }
 
   if (cmd === "push-list") {
