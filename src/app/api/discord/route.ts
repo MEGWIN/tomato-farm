@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
+import nacl from "tweetnacl";
 import { sendPushToAll } from "@/lib/push";
 import { createClient } from "@supabase/supabase-js";
-import { webcrypto } from "node:crypto";
 
 export const runtime = "nodejs";
 
@@ -23,27 +23,15 @@ function hexToUint8(hex: string): Uint8Array {
   return out;
 }
 
-let cachedKey: CryptoKey | null = null;
-async function getPublicKey(): Promise<CryptoKey> {
-  if (cachedKey) return cachedKey;
-  cachedKey = await webcrypto.subtle.importKey(
-    "raw",
-    hexToUint8(PUBLIC_KEY),
-    { name: "Ed25519" },
-    false,
-    ["verify"],
-  );
-  return cachedKey;
-}
-
-async function verify(signature: string, timestamp: string, body: string): Promise<boolean> {
+function verify(signature: string, timestamp: string, body: string): { ok: boolean; err?: string } {
   try {
-    const key = await getPublicKey();
-    const message = new TextEncoder().encode(timestamp + body);
-    return await webcrypto.subtle.verify("Ed25519", key, hexToUint8(signature), message);
+    const msg = new TextEncoder().encode(timestamp + body);
+    const sig = hexToUint8(signature);
+    const key = hexToUint8(PUBLIC_KEY);
+    const ok = nacl.sign.detached.verify(msg, sig, key);
+    return { ok };
   } catch (err) {
-    console.error("verify err:", err);
-    return false;
+    return { ok: false, err: err instanceof Error ? err.message : String(err) };
   }
 }
 
@@ -104,11 +92,30 @@ export async function POST(req: Request) {
     return new NextResponse("missing headers", { status: 401 });
   }
 
-  const ok = await verify(signature, timestamp, rawBody);
-  console.log("verify result:", ok);
+  const result = verify(signature, timestamp, rawBody);
 
-  if (!ok) {
-    return new NextResponse("invalid request signature", { status: 401 });
+  // デバッグ: Supabaseに全部保存
+  await supabaseAdmin.from("discord_debug_logs").insert({
+    sig: signature,
+    ts: timestamp,
+    body: rawBody,
+    pubkey_head: PUBLIC_KEY?.slice(0, 16) || null,
+    verify_result: result.ok,
+    verify_err: result.err || null,
+  });
+
+  if (!result.ok) {
+    return new NextResponse(
+      JSON.stringify({
+        error: "invalid request signature",
+        debugErr: result.err,
+        sigLen: signature.length,
+        tsLen: timestamp.length,
+        bodyLen: rawBody.length,
+        pubKeyLen: PUBLIC_KEY.length,
+      }),
+      { status: 401, headers: { "content-type": "application/json" } },
+    );
   }
 
   const interaction = JSON.parse(rawBody) as Interaction;
