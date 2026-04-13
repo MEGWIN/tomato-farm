@@ -39,6 +39,10 @@ export default function HeroSection() {
         <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-10 leading-relaxed">
           <span className="font-heading font-bold text-sunshine-300 text-2xl md:text-3xl">AI×インタラクティブ</span>
           <br />
+          Media Entertainment Group — WIN
+          <br />
+          映像を、体験へ。
+          <br />
           今までできなかったことをAIとやる。
           <br />
           それが<strong>MEGWIN</strong>だ！
