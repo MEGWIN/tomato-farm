@@ -95,18 +95,16 @@ export async function POST(req: Request) {
   const result = verify(signature, timestamp, rawBody);
 
   // デバッグログは非同期で保存（レスポンス遅延させない）
-  supabaseAdmin
-    .from("discord_debug_logs")
-    .insert({
+  Promise.resolve(
+    supabaseAdmin.from("discord_debug_logs").insert({
       sig: signature,
       ts: timestamp,
       body: rawBody,
       pubkey_head: PUBLIC_KEY?.slice(0, 16) || null,
       verify_result: result.ok,
       verify_err: result.err || null,
-    })
-    .then(() => {})
-    .catch(() => {});
+    }),
+  ).catch(() => {});
 
   if (!result.ok) {
     return new NextResponse(
