@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { verifyKey } from "discord-interactions";
 import { sendPushToAll } from "@/lib/push";
 import { createClient } from "@supabase/supabase-js";
+import { webcrypto } from "node:crypto";
 
 export const runtime = "nodejs";
 
@@ -17,10 +17,32 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
+function hexToUint8(hex: string): Uint8Array {
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  return out;
+}
+
+let cachedKey: CryptoKey | null = null;
+async function getPublicKey(): Promise<CryptoKey> {
+  if (cachedKey) return cachedKey;
+  cachedKey = await webcrypto.subtle.importKey(
+    "raw",
+    hexToUint8(PUBLIC_KEY),
+    { name: "Ed25519" },
+    false,
+    ["verify"],
+  );
+  return cachedKey;
+}
+
 async function verify(signature: string, timestamp: string, body: string): Promise<boolean> {
   try {
-    return await verifyKey(body, signature, timestamp, PUBLIC_KEY);
-  } catch {
+    const key = await getPublicKey();
+    const message = new TextEncoder().encode(timestamp + body);
+    return await webcrypto.subtle.verify("Ed25519", key, hexToUint8(signature), message);
+  } catch (err) {
+    console.error("verify err:", err);
     return false;
   }
 }
