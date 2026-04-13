@@ -101,13 +101,18 @@ export default function NotificationButton() {
           userAgent: navigator.userAgent,
         }),
       });
-      if (!res.ok) throw new Error("save failed");
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`save failed (${res.status}): ${txt}`);
+      }
 
       setStatus("subscribed");
       setMessage("通知ONにしたぜMAJIDE");
-    } catch {
+    } catch (err) {
       setStatus("error");
-      setMessage("エラー出たぜMAJIDE");
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("subscribe error:", err);
+      setMessage(`エラー: ${msg}`);
     }
   };
 
