@@ -74,6 +74,21 @@ export async function GET() {
   });
 }
 
+export async function HEAD() {
+  return new NextResponse(null, { status: 200 });
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, GET, HEAD, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, X-Signature-Ed25519, X-Signature-Timestamp",
+    },
+  });
+}
+
 export async function POST(req: Request) {
   const signature = req.headers.get("x-signature-ed25519");
   const timestamp = req.headers.get("x-signature-timestamp");
@@ -94,17 +109,15 @@ export async function POST(req: Request) {
 
   const result = verify(signature, timestamp, rawBody);
 
-  // デバッグログは非同期で保存（レスポンス遅延させない）
-  Promise.resolve(
-    supabaseAdmin.from("discord_debug_logs").insert({
-      sig: signature,
-      ts: timestamp,
-      body: rawBody,
-      pubkey_head: PUBLIC_KEY?.slice(0, 16) || null,
-      verify_result: result.ok,
-      verify_err: result.err || null,
-    }),
-  ).catch(() => {});
+  // デバッグログ保存（function終了前に必ず完了させる）
+  await supabaseAdmin.from("discord_debug_logs").insert({
+    sig: signature,
+    ts: timestamp,
+    body: rawBody,
+    pubkey_head: PUBLIC_KEY?.slice(0, 16) || null,
+    verify_result: result.ok,
+    verify_err: result.err || null,
+  });
 
   if (!result.ok) {
     return new NextResponse(
