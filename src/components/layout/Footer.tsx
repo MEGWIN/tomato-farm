@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
+import NotificationButton from "@/components/pwa/NotificationButton";
 
 export default function Footer() {
   return (
@@ -88,7 +89,16 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-soil-800 mt-8 pt-8 text-center text-soil-200 text-xs">
+        <div className="border-t border-soil-800 mt-8 pt-8 flex flex-col items-center gap-4">
+          <div>
+            <h3 className="font-heading font-bold text-sunshine-400 text-sm mb-3 text-center">
+              更新通知を受け取る
+            </h3>
+            <NotificationButton />
+          </div>
+        </div>
+
+        <div className="mt-8 pt-4 text-center text-soil-200 text-xs">
           <p>&copy; {new Date().getFullYear()} {siteConfig.author}. Powered by Claude &amp; Next.js</p>
         </div>
       </div>

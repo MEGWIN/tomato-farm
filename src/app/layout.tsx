@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Zen_Maru_Gothic, Noto_Sans_JP } from "next/font/google";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import ServiceWorkerRegistrar from "@/components/pwa/ServiceWorkerRegistrar";
 import { siteConfig } from "@/config/site";
 import "./globals.css";
 
@@ -25,6 +26,12 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.shortName}`,
   },
   description: siteConfig.description,
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: siteConfig.shortName,
+    statusBarStyle: "default",
+  },
   openGraph: {
     title: siteConfig.name,
     description: siteConfig.description,
@@ -40,6 +47,10 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#EC4899",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -51,6 +62,7 @@ export default function RootLayout({
       className={`${zenMaruGothic.variable} ${notoSansJP.variable} h-full`}
     >
       <body className="min-h-full flex flex-col antialiased">
+        <ServiceWorkerRegistrar />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
