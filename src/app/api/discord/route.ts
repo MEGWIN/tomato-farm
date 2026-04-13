@@ -66,12 +66,36 @@ function reply(content: string, ephemeral = true) {
   });
 }
 
+export async function GET() {
+  return NextResponse.json({
+    publicKeySet: Boolean(PUBLIC_KEY),
+    publicKeyLen: PUBLIC_KEY?.length || 0,
+    publicKeyHead: PUBLIC_KEY ? PUBLIC_KEY.slice(0, 8) : null,
+  });
+}
+
 export async function POST(req: Request) {
   const signature = req.headers.get("x-signature-ed25519");
   const timestamp = req.headers.get("x-signature-timestamp");
   const rawBody = await req.text();
 
-  if (!signature || !timestamp || !verify(signature, timestamp, rawBody)) {
+  console.log("discord POST:", {
+    hasSignature: Boolean(signature),
+    hasTimestamp: Boolean(timestamp),
+    sigLen: signature?.length,
+    bodyLen: rawBody.length,
+    bodyHead: rawBody.slice(0, 80),
+    pubKeyLen: PUBLIC_KEY?.length,
+  });
+
+  if (!signature || !timestamp) {
+    return new NextResponse("missing headers", { status: 401 });
+  }
+
+  const ok = verify(signature, timestamp, rawBody);
+  console.log("verify result:", ok);
+
+  if (!ok) {
     return new NextResponse("invalid request signature", { status: 401 });
   }
 
