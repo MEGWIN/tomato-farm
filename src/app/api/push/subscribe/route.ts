@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { notifySubscribed } from "@/lib/discord-log";
 
 type Body = {
   endpoint: string;
@@ -13,6 +14,14 @@ export async function POST(req: Request) {
   if (!body?.endpoint || !body?.keys?.p256dh || !body?.keys?.auth) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
+
+  // 既存購読か新規かを upsert 前に判定
+  const { data: existing } = await supabase
+    .from("push_subscriptions")
+    .select("id")
+    .eq("endpoint", body.endpoint)
+    .maybeSingle();
+  const isNew = !existing;
 
   const { error } = await supabase
     .from("push_subscriptions")
@@ -30,6 +39,15 @@ export async function POST(req: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // 新規購読のみ Discord 通知
+  if (isNew) {
+    const { count } = await supabase
+      .from("push_subscriptions")
+      .select("*", { count: "exact", head: true });
+    await notifySubscribed({ userAgent: body.userAgent, total: count ?? 0 });
+  }
+
   return NextResponse.json({ ok: true });
 }
 
