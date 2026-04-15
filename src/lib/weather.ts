@@ -98,6 +98,53 @@ export function getWeatherEmoji(code: number): string {
 }
 
 /**
+ * 植物別の危険度判定
+ * - safe: 安全
+ * - caution: 注意（生育に悪影響の可能性）
+ * - danger: 危険（枯死・致命的ダメージの可能性）
+ */
+export type PlantRiskLevel = "safe" | "caution" | "danger";
+
+export interface PlantRisk {
+  level: PlantRiskLevel;
+  reason: string;
+}
+
+// プチトマト: 生育適温20-30℃。10℃以下で生育停止、5℃以下で寒害。
+//             35℃以上で着果不良、40℃以上で致命。過湿で疫病・裂果。
+export function evaluateTomatoRisk(args: {
+  tempMin?: number;
+  tempMax?: number;
+  precipitation?: number;
+}): PlantRisk {
+  const { tempMin, tempMax, precipitation } = args;
+  if (tempMin != null && tempMin <= 5) return { level: "danger", reason: "霜害の恐れ" };
+  if (tempMax != null && tempMax >= 40) return { level: "danger", reason: "高温で枯死の恐れ" };
+  if (precipitation != null && precipitation >= 50) return { level: "danger", reason: "豪雨で根腐れ・裂果" };
+  if (tempMin != null && tempMin <= 10) return { level: "caution", reason: "低温で生育停止" };
+  if (tempMax != null && tempMax >= 35) return { level: "caution", reason: "高温で着果不良" };
+  if (precipitation != null && precipitation >= 30) return { level: "caution", reason: "過湿で疫病注意" };
+  return { level: "safe", reason: "問題なし" };
+}
+
+// バジル: 生育適温20-25℃で寒さに非常に弱い。15℃以下で生育鈍化、
+//         10℃以下で葉が黒変、5℃で枯死。高温には比較的強い。
+export function evaluateBasilRisk(args: {
+  tempMin?: number;
+  tempMax?: number;
+  precipitation?: number;
+}): PlantRisk {
+  const { tempMin, tempMax, precipitation } = args;
+  if (tempMin != null && tempMin <= 10) return { level: "danger", reason: "低温で枯死の恐れ" };
+  if (tempMax != null && tempMax >= 38) return { level: "danger", reason: "高温で葉焼け致命" };
+  if (precipitation != null && precipitation >= 50) return { level: "danger", reason: "豪雨で根腐れ" };
+  if (tempMin != null && tempMin <= 15) return { level: "caution", reason: "寒くて生育鈍化" };
+  if (tempMax != null && tempMax >= 33) return { level: "caution", reason: "高温で葉焼け注意" };
+  if (precipitation != null && precipitation >= 30) return { level: "caution", reason: "蒸れに注意" };
+  return { level: "safe", reason: "問題なし" };
+}
+
+/**
  * 現在の天気を取得
  */
 export async function getCurrentWeather(): Promise<WeatherData> {

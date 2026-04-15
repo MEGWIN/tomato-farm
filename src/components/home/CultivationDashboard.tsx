@@ -1,5 +1,12 @@
 import { getCultivationStats } from "@/lib/cultivation";
-import { getWeeklyForecast, getHourlyForecast, getWeatherEmoji } from "@/lib/weather";
+import {
+  getWeeklyForecast,
+  getHourlyForecast,
+  getWeatherEmoji,
+  evaluateTomatoRisk,
+  evaluateBasilRisk,
+  type PlantRisk,
+} from "@/lib/weather";
 import GrowthChart from "./GrowthChart";
 
 const PLANTS = [
@@ -47,6 +54,18 @@ export default async function CultivationDashboard() {
 
   // 曜日名
   const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
+
+  // 危険度バッジのスタイル
+  const RISK_STYLE: Record<PlantRisk["level"], string> = {
+    safe: "bg-leaf-100 text-leaf-700",
+    caution: "bg-sunshine-100 text-sunshine-700",
+    danger: "bg-tomato-100 text-tomato-700",
+  };
+  const RISK_DOT: Record<PlantRisk["level"], string> = {
+    safe: "🟢",
+    caution: "🟡",
+    danger: "🔴",
+  };
 
   return (
     <section className="py-12 px-4 bg-gradient-to-b from-soil-50 to-leaf-50/30">
@@ -148,23 +167,48 @@ export default async function CultivationDashboard() {
               <span className="text-leaf-500">⏰</span> 3時間ごとの予報
             </h3>
             <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-              {hourly.map((h) => (
-                <div
-                  key={h.time}
-                  className="text-center p-3 rounded-xl bg-soil-50"
-                >
-                  <p className="text-xs font-bold text-soil-800/60 mb-1">
-                    {new Date(h.time).getHours()}:00
-                  </p>
-                  <span className="text-2xl block mb-1">
-                    {h.weatherEmoji}
-                  </span>
-                  <p className="font-heading font-bold text-sm text-soil-900">
-                    {h.temperature}°
-                  </p>
-                </div>
-              ))}
+              {hourly.map((h) => {
+                const tomatoRisk = evaluateTomatoRisk({
+                  tempMin: h.temperature,
+                  tempMax: h.temperature,
+                });
+                const basilRisk = evaluateBasilRisk({
+                  tempMin: h.temperature,
+                  tempMax: h.temperature,
+                });
+                return (
+                  <div
+                    key={h.time}
+                    className="text-center p-3 rounded-xl bg-soil-50"
+                  >
+                    <p className="text-xs font-bold text-soil-800/60 mb-1">
+                      {new Date(h.time).getHours()}:00
+                    </p>
+                    <span className="text-2xl block mb-1">{h.weatherEmoji}</span>
+                    <p className="font-heading font-bold text-sm text-soil-900">
+                      {h.temperature}°
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      <div
+                        className={`text-[10px] rounded-full px-1 py-0.5 ${RISK_STYLE[tomatoRisk.level]}`}
+                        title={`プチトマト: ${tomatoRisk.reason}`}
+                      >
+                        🍅 {RISK_DOT[tomatoRisk.level]}
+                      </div>
+                      <div
+                        className={`text-[10px] rounded-full px-1 py-0.5 ${RISK_STYLE[basilRisk.level]}`}
+                        title={`バジル: ${basilRisk.reason}`}
+                      >
+                        🌿 {RISK_DOT[basilRisk.level]}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+            <p className="text-[10px] text-soil-800/50 mt-3 text-center">
+              🟢 安全 / 🟡 注意 / 🔴 危険（ホバーで理由表示）
+            </p>
           </div>
         )}
 
@@ -179,6 +223,16 @@ export default async function CultivationDashboard() {
                 const d = new Date(day.date + "T00:00:00");
                 const dayName = DAY_NAMES[d.getDay()];
                 const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                const tomatoRisk = evaluateTomatoRisk({
+                  tempMin: day.tempMin,
+                  tempMax: day.tempMax,
+                  precipitation: day.precipitationSum,
+                });
+                const basilRisk = evaluateBasilRisk({
+                  tempMin: day.tempMin,
+                  tempMax: day.tempMax,
+                  precipitation: day.precipitationSum,
+                });
                 return (
                   <div
                     key={day.date}
@@ -205,10 +259,27 @@ export default async function CultivationDashboard() {
                         {day.precipitationSum}mm
                       </p>
                     )}
+                    <div className="mt-2 space-y-1">
+                      <div
+                        className={`text-[10px] rounded-full px-1 py-0.5 ${RISK_STYLE[tomatoRisk.level]}`}
+                        title={`プチトマト: ${tomatoRisk.reason}`}
+                      >
+                        🍅 {RISK_DOT[tomatoRisk.level]}
+                      </div>
+                      <div
+                        className={`text-[10px] rounded-full px-1 py-0.5 ${RISK_STYLE[basilRisk.level]}`}
+                        title={`バジル: ${basilRisk.reason}`}
+                      >
+                        🌿 {RISK_DOT[basilRisk.level]}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
             </div>
+            <p className="text-[10px] text-soil-800/50 mt-3 text-center">
+              🟢 安全 / 🟡 注意 / 🔴 危険（ホバーで理由表示）
+            </p>
           </div>
         )}
       </div>
