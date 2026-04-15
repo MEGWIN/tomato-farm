@@ -96,7 +96,6 @@ export default async function CultivationDashboard() {
               { name: "プチトマト１", emoji: "🍅" },
               { name: "プチトマト２", emoji: "🍅" },
               { name: "プチトマト３", emoji: "🍅" },
-              { name: "バジル", emoji: "🌿" },
             ].map((plant) => (
               <div
                 key={plant.name}
