@@ -8,28 +8,25 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  Legend,
 } from "recharts";
 
-interface DataPoint {
-  date: string;
-  label: string;
-  height: number | null;
-  day: number;
+interface Series {
+  key: string;
+  name: string;
+  color: string;
 }
 
 interface GrowthChartProps {
-  data: DataPoint[];
+  data: Array<{ label: string; date: string; [key: string]: number | string | null }>;
+  series: Series[];
 }
 
-export default function GrowthChart({ data }: GrowthChartProps) {
-  // 草丈データがあるポイントだけ表示
-  const chartData = data
-    .filter((d) => d.height != null)
-    .map((d) => ({
-      label: d.label,
-      height: d.height,
-      day: d.day,
-    }));
+export default function GrowthChart({ data, series }: GrowthChartProps) {
+  // 少なくとも1系列に値があるポイントだけ表示
+  const chartData = data.filter((d) =>
+    series.some((s) => d[s.key] != null)
+  );
 
   if (chartData.length === 0) {
     return (
@@ -57,7 +54,7 @@ export default function GrowthChart({ data }: GrowthChartProps) {
             unit="cm"
           />
           <Tooltip
-            formatter={(value) => [`${value}cm`, "草丈"]}
+            formatter={(value, name) => [`${value}cm`, String(name)]}
             labelFormatter={(label) => String(label)}
             contentStyle={{
               borderRadius: "12px",
@@ -65,14 +62,20 @@ export default function GrowthChart({ data }: GrowthChartProps) {
               fontSize: "14px",
             }}
           />
-          <Line
-            type="monotone"
-            dataKey="height"
-            stroke="#EF4444"
-            strokeWidth={3}
-            dot={{ fill: "#EF4444", r: 5, strokeWidth: 2, stroke: "#fff" }}
-            activeDot={{ r: 7, fill: "#DC2626" }}
-          />
+          <Legend wrapperStyle={{ fontSize: "13px" }} />
+          {series.map((s) => (
+            <Line
+              key={s.key}
+              type="monotone"
+              dataKey={s.key}
+              name={s.name}
+              stroke={s.color}
+              strokeWidth={3}
+              dot={{ fill: s.color, r: 4, strokeWidth: 2, stroke: "#fff" }}
+              activeDot={{ r: 6, fill: s.color }}
+              connectNulls
+            />
+          ))}
         </LineChart>
       </ResponsiveContainer>
     </div>

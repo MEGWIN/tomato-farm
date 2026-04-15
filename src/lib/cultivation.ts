@@ -8,13 +8,22 @@ export interface CultivationLog {
   diary_slug: string | null;
   note: string | null;
   created_at: string;
+  plant_id: number;
+}
+
+export interface PlantStats {
+  plantId: number;
+  latestLog: CultivationLog | null;
+  previousLog: CultivationLog | null;
+  logs: CultivationLog[];
 }
 
 export interface CultivationStats {
-  latestLog: CultivationLog | null;
-  previousLog: CultivationLog | null;
+  plants: PlantStats[];
   allLogs: CultivationLog[];
 }
+
+export const PLANT_IDS = [1, 2, 3] as const;
 
 /** 栽培ログを全件取得（日付順） */
 export async function getCultivationLogs(): Promise<CultivationLog[]> {
@@ -30,22 +39,25 @@ export async function getCultivationLogs(): Promise<CultivationLog[]> {
   return data ?? [];
 }
 
-/** 栽培ステータスを取得（最新・前回・全ログ） */
+/** 株ごとに最新・前回・ログを集計 */
 export async function getCultivationStats(): Promise<CultivationStats> {
   const allLogs = await getCultivationLogs();
 
-  // 草丈データがあるログだけフィルタ
-  const logsWithHeight = allLogs.filter((l) => l.height_cm != null);
+  const plants: PlantStats[] = PLANT_IDS.map((plantId) => {
+    const logs = allLogs.filter((l) => l.plant_id === plantId);
+    const logsWithHeight = logs.filter((l) => l.height_cm != null);
+    const latestLog =
+      logsWithHeight.length > 0
+        ? logsWithHeight[logsWithHeight.length - 1]
+        : logs.length > 0
+          ? logs[logs.length - 1]
+          : null;
+    const previousLog =
+      logsWithHeight.length > 1
+        ? logsWithHeight[logsWithHeight.length - 2]
+        : null;
+    return { plantId, latestLog, previousLog, logs };
+  });
 
-  const latestLog = logsWithHeight.length > 0
-    ? logsWithHeight[logsWithHeight.length - 1]
-    : allLogs.length > 0
-      ? allLogs[allLogs.length - 1]
-      : null;
-
-  const previousLog = logsWithHeight.length > 1
-    ? logsWithHeight[logsWithHeight.length - 2]
-    : null;
-
-  return { latestLog, previousLog, allLogs };
+  return { plants, allLogs };
 }

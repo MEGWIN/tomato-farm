@@ -2,8 +2,14 @@ import { getCultivationStats } from "@/lib/cultivation";
 import { getWeeklyForecast, getHourlyForecast, getWeatherEmoji } from "@/lib/weather";
 import GrowthChart from "./GrowthChart";
 
+const PLANTS = [
+  { id: 1, name: "プチトマト１", emoji: "🍅", color: "#EF4444" },
+  { id: 2, name: "プチトマト２", emoji: "🍅", color: "#F97316" },
+  { id: 3, name: "プチトマト３", emoji: "🍅", color: "#EAB308" },
+] as const;
+
 export default async function CultivationDashboard() {
-  let stats = { latestLog: null, previousLog: null, allLogs: [] } as Awaited<
+  let stats = { plants: [], allLogs: [] } as Awaited<
     ReturnType<typeof getCultivationStats>
   >;
   let weekly: Awaited<ReturnType<typeof getWeeklyForecast>> = [];
@@ -19,21 +25,25 @@ export default async function CultivationDashboard() {
     console.error("Dashboard data fetch failed:", e);
   }
 
-  const { latestLog, previousLog, allLogs } = stats;
+  // 株ごとのデータをID順に取り出す
+  const plantStatsById = new Map(stats.plants.map((p) => [p.plantId, p]));
 
-  // 成長差分を計算
-  const heightDiff =
-    latestLog?.height_cm != null && previousLog?.height_cm != null
-      ? latestLog.height_cm - previousLog.height_cm
-      : null;
-
-  // グラフ用データ
-  const chartData = allLogs.map((log) => ({
-    date: log.date,
-    label: `${new Date(log.date).getMonth() + 1}/${new Date(log.date).getDate()}`,
-    height: log.height_cm,
-    day: log.day_number,
-  }));
+  // グラフ用データ: 日付ごとに各株の草丈をまとめる
+  const dateSet = new Set(stats.allLogs.map((l) => l.date));
+  const sortedDates = [...dateSet].sort();
+  const chartData = sortedDates.map((date) => {
+    const row: { label: string; date: string; [key: string]: number | string | null } = {
+      date,
+      label: `${new Date(date).getMonth() + 1}/${new Date(date).getDate()}`,
+    };
+    for (const p of PLANTS) {
+      const log = stats.allLogs.find(
+        (l) => l.date === date && l.plant_id === p.id
+      );
+      row[`plant${p.id}`] = log?.height_cm ?? null;
+    }
+    return row;
+  });
 
   // 曜日名
   const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
@@ -51,61 +61,69 @@ export default async function CultivationDashboard() {
 
         {/* 個体別カード */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { name: "プチトマト１", emoji: "🍅" },
-            { name: "プチトマト２", emoji: "🍅" },
-            { name: "プチトマト３", emoji: "🍅" },
-          ].map((plant) => (
-            <div
-              key={plant.name}
-              className="bg-white rounded-2xl p-5 border border-tomato-100/50 shadow-sm"
-            >
-              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-leaf-100">
-                <span className="text-3xl">{plant.emoji}</span>
-                <h3 className="font-heading font-bold text-lg text-soil-900">
-                  {plant.name}
-                </h3>
-              </div>
+          {PLANTS.map((plant) => {
+            const ps = plantStatsById.get(plant.id);
+            const latest = ps?.latestLog ?? null;
+            const previous = ps?.previousLog ?? null;
+            const diff =
+              latest?.height_cm != null && previous?.height_cm != null
+                ? latest.height_cm - previous.height_cm
+                : null;
+            return (
+              <div
+                key={plant.id}
+                className="bg-white rounded-2xl p-5 border border-tomato-100/50 shadow-sm"
+              >
+                <div
+                  className="flex items-center gap-2 mb-4 pb-3 border-b-2"
+                  style={{ borderColor: plant.color }}
+                >
+                  <span className="text-3xl">{plant.emoji}</span>
+                  <h3 className="font-heading font-bold text-lg text-soil-900">
+                    {plant.name}
+                  </h3>
+                </div>
 
-              {/* 基本データ */}
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                <div className="text-center">
-                  <p className="text-xs font-bold text-soil-800/50 mb-1">栽培日数</p>
-                  <p className="font-heading font-black text-xl text-leaf-600">
-                    {latestLog ? `${latestLog.day_number}日目` : "--"}
-                  </p>
+                {/* 基本データ */}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-soil-800/50 mb-1">栽培日数</p>
+                    <p className="font-heading font-black text-xl text-leaf-600">
+                      {latest ? `${latest.day_number}日目` : "--"}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-soil-800/50 mb-1">草丈</p>
+                    <p className="font-heading font-black text-xl text-leaf-600">
+                      {latest?.height_cm != null ? `${latest.height_cm}cm` : "--"}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-soil-800/50 mb-1">前回比</p>
+                    <p className="font-heading font-black text-xl text-sunshine-500">
+                      {diff != null ? `${diff >= 0 ? "+" : ""}${diff}cm` : "--"}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs font-bold text-soil-800/50 mb-1">草丈</p>
-                  <p className="font-heading font-black text-xl text-leaf-600">
-                    {latestLog?.height_cm != null ? `${latestLog.height_cm}cm` : "--"}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-bold text-soil-800/50 mb-1">前回比</p>
-                  <p className="font-heading font-black text-xl text-sunshine-500">
-                    {heightDiff != null ? `+${heightDiff}cm` : "--"}
-                  </p>
-                </div>
-              </div>
 
-              {/* センサーデータ（準備中） */}
-              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-dashed border-soil-200">
-                <div className="text-center">
-                  <p className="text-xs font-bold text-soil-800/50 mb-1">💧 水温</p>
-                  <p className="font-heading font-bold text-sm text-soil-400">準備中</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-bold text-soil-800/50 mb-1">🧪 水質</p>
-                  <p className="font-heading font-bold text-sm text-soil-400">準備中</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-bold text-soil-800/50 mb-1">📏 水位</p>
-                  <p className="font-heading font-bold text-sm text-soil-400">準備中</p>
+                {/* センサーデータ（準備中） */}
+                <div className="grid grid-cols-3 gap-2 pt-3 border-t border-dashed border-soil-200">
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-soil-800/50 mb-1">💧 水温</p>
+                    <p className="font-heading font-bold text-sm text-soil-400">準備中</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-soil-800/50 mb-1">🧪 水質</p>
+                    <p className="font-heading font-bold text-sm text-soil-400">準備中</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-soil-800/50 mb-1">📏 水位</p>
+                    <p className="font-heading font-bold text-sm text-soil-400">準備中</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* 成長グラフ */}
@@ -113,7 +131,14 @@ export default async function CultivationDashboard() {
           <h3 className="font-heading font-bold text-lg text-soil-900 mb-4 flex items-center gap-2">
             <span className="text-tomato-500">📈</span> 成長グラフ
           </h3>
-          <GrowthChart data={chartData} />
+          <GrowthChart
+            data={chartData}
+            series={PLANTS.map((p) => ({
+              key: `plant${p.id}`,
+              name: p.name,
+              color: p.color,
+            }))}
+          />
         </div>
 
         {/* 3時間ごとの予報 */}
