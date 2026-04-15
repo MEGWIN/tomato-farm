@@ -31,6 +31,18 @@ export interface CultivationStats {
   plants: PlantStats[];
   allLogs: CultivationLog[];
   harvestTotals: Record<number, number>;
+  harvestToday: Record<number, number>;
+}
+
+/** JST基準の今日の日付（YYYY-MM-DD） */
+function getJstToday(): string {
+  const now = new Date();
+  const jstMs = now.getTime() + 9 * 60 * 60 * 1000;
+  const shifted = new Date(jstMs);
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 export const PLANT_IDS = [1, 2, 3] as const;
@@ -49,28 +61,38 @@ export async function getCultivationLogs(): Promise<CultivationLog[]> {
   return data ?? [];
 }
 
-/** 収穫累計を株ごとに取得 */
-export async function getHarvestTotals(): Promise<Record<number, number>> {
+/** 収穫累計と当日合計を株ごとに取得 */
+export async function getHarvestSummary(): Promise<{
+  totals: Record<number, number>;
+  today: Record<number, number>;
+}> {
   const { data, error } = await supabase
     .from("harvests")
-    .select("plant_id, count");
+    .select("plant_id, count, date");
   if (error) {
     console.error("収穫取得失敗:", error.message);
-    return {};
+    return { totals: {}, today: {} };
   }
   const totals: Record<number, number> = {};
-  for (const row of (data ?? []) as Pick<Harvest, "plant_id" | "count">[]) {
+  const today: Record<number, number> = {};
+  const todayStr = getJstToday();
+  for (const row of (data ?? []) as Pick<Harvest, "plant_id" | "count" | "date">[]) {
     totals[row.plant_id] = (totals[row.plant_id] ?? 0) + row.count;
+    if (row.date === todayStr) {
+      today[row.plant_id] = (today[row.plant_id] ?? 0) + row.count;
+    }
   }
-  return totals;
+  return { totals, today };
 }
 
 /** 株ごとに最新・前回・ログを集計 */
 export async function getCultivationStats(): Promise<CultivationStats> {
-  const [allLogs, harvestTotals] = await Promise.all([
+  const [allLogs, harvest] = await Promise.all([
     getCultivationLogs(),
-    getHarvestTotals(),
+    getHarvestSummary(),
   ]);
+  const harvestTotals = harvest.totals;
+  const harvestToday = harvest.today;
 
   const plants: PlantStats[] = PLANT_IDS.map((plantId) => {
     const logs = allLogs.filter((l) => l.plant_id === plantId);
@@ -88,5 +110,5 @@ export async function getCultivationStats(): Promise<CultivationStats> {
     return { plantId, latestLog, previousLog, logs };
   });
 
-  return { plants, allLogs, harvestTotals };
+  return { plants, allLogs, harvestTotals, harvestToday };
 }

@@ -189,12 +189,11 @@ export default function AboutPage() {
           <h2 className="font-heading font-black text-3xl text-soil-900 text-center mb-10">
             <span className="text-leaf-500 mr-2">🌱</span>栽培メンバー
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             {[
               { name: "プチトマト１", emoji: "🍅" },
               { name: "プチトマト２", emoji: "🍅" },
               { name: "プチトマト３", emoji: "🍅" },
-              { name: "バジル", emoji: "🌿" },
             ].map((plant) => (
               <div
                 key={plant.name}
