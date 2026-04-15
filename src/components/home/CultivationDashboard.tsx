@@ -1,5 +1,5 @@
 import { getCultivationStats } from "@/lib/cultivation";
-import { getWeeklyForecast, getHourlyForecast, getCurrentWeather, getWeatherEmoji } from "@/lib/weather";
+import { getWeeklyForecast, getHourlyForecast, getWeatherEmoji } from "@/lib/weather";
 import GrowthChart from "./GrowthChart";
 
 export default async function CultivationDashboard() {
@@ -8,14 +8,12 @@ export default async function CultivationDashboard() {
   >;
   let weekly: Awaited<ReturnType<typeof getWeeklyForecast>> = [];
   let hourly: Awaited<ReturnType<typeof getHourlyForecast>> = [];
-  let weather: Awaited<ReturnType<typeof getCurrentWeather>> | null = null;
 
   try {
-    [stats, weekly, hourly, weather] = await Promise.all([
+    [stats, weekly, hourly] = await Promise.all([
       getCultivationStats(),
       getWeeklyForecast(),
       getHourlyForecast(),
-      getCurrentWeather(),
     ]);
   } catch (e) {
     console.error("Dashboard data fetch failed:", e);
@@ -51,63 +49,63 @@ export default async function CultivationDashboard() {
           <p className="text-soil-800/60 text-sm">リアルタイムの栽培状況</p>
         </div>
 
-        {/* ステータスカード + 現在の天気 */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-white rounded-2xl p-5 border border-tomato-100/50 shadow-sm text-center">
-            <p className="text-sm font-bold text-soil-800/50 mb-1">栽培日数</p>
-            <p className="font-heading font-black text-3xl text-leaf-600">
-              {latestLog ? (
-                <><span className="text-2xl">🌱</span> {latestLog.day_number}日目</>
-              ) : "--"}
-            </p>
-          </div>
-          <div className="bg-white rounded-2xl p-5 border border-tomato-100/50 shadow-sm text-center">
-            <p className="text-sm font-bold text-soil-800/50 mb-1">現在の草丈</p>
-            <p className="font-heading font-black text-3xl text-leaf-600">
-              {latestLog?.height_cm != null ? `${latestLog.height_cm}cm` : "--"}
-            </p>
-          </div>
-          <div className="bg-white rounded-2xl p-5 border border-tomato-100/50 shadow-sm text-center">
-            <p className="text-sm font-bold text-soil-800/50 mb-1">前回比</p>
-            <p className="font-heading font-black text-3xl text-sunshine-500">
-              {heightDiff != null ? `+${heightDiff}cm` : "--"}
-            </p>
-          </div>
-          <div className="bg-white rounded-2xl p-5 border border-tomato-100/50 shadow-sm text-center">
-            <p className="text-sm font-bold text-soil-800/50 mb-1">今の天気</p>
-            {weather ? (
-              <p className="font-heading font-black text-3xl">
-                <span className="text-2xl">{weather.weatherEmoji}</span>{" "}
-                <span className="text-soil-900">{Math.round(weather.temperature)}°</span>
-              </p>
-            ) : (
-              <p className="font-heading font-black text-3xl text-soil-800/30">--</p>
-            )}
-          </div>
-        </div>
-
-        {/* 栽培メンバー */}
-        <div className="bg-white rounded-2xl shadow-sm border border-leaf-200/50 p-6">
-          <h3 className="font-heading font-bold text-lg text-soil-900 mb-4 flex items-center gap-2">
-            <span className="text-leaf-500">🌱</span> 栽培メンバー
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { name: "プチトマト１", emoji: "🍅" },
-              { name: "プチトマト２", emoji: "🍅" },
-              { name: "プチトマト３", emoji: "🍅" },
-            ].map((plant) => (
-              <div
-                key={plant.name}
-                className="text-center p-4 rounded-xl bg-soil-50 border border-leaf-100"
-              >
-                <span className="text-3xl block mb-2">{plant.emoji}</span>
-                <p className="font-heading font-bold text-sm text-soil-900">
+        {/* 個体別カード */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { name: "プチトマト１", emoji: "🍅" },
+            { name: "プチトマト２", emoji: "🍅" },
+            { name: "プチトマト３", emoji: "🍅" },
+          ].map((plant) => (
+            <div
+              key={plant.name}
+              className="bg-white rounded-2xl p-5 border border-tomato-100/50 shadow-sm"
+            >
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-leaf-100">
+                <span className="text-3xl">{plant.emoji}</span>
+                <h3 className="font-heading font-bold text-lg text-soil-900">
                   {plant.name}
-                </p>
+                </h3>
               </div>
-            ))}
-          </div>
+
+              {/* 基本データ */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="text-center">
+                  <p className="text-xs font-bold text-soil-800/50 mb-1">栽培日数</p>
+                  <p className="font-heading font-black text-xl text-leaf-600">
+                    {latestLog ? `${latestLog.day_number}日目` : "--"}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-soil-800/50 mb-1">草丈</p>
+                  <p className="font-heading font-black text-xl text-leaf-600">
+                    {latestLog?.height_cm != null ? `${latestLog.height_cm}cm` : "--"}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-soil-800/50 mb-1">前回比</p>
+                  <p className="font-heading font-black text-xl text-sunshine-500">
+                    {heightDiff != null ? `+${heightDiff}cm` : "--"}
+                  </p>
+                </div>
+              </div>
+
+              {/* センサーデータ（準備中） */}
+              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-dashed border-soil-200">
+                <div className="text-center">
+                  <p className="text-xs font-bold text-soil-800/50 mb-1">💧 水温</p>
+                  <p className="font-heading font-bold text-sm text-soil-400">準備中</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-soil-800/50 mb-1">🧪 水質</p>
+                  <p className="font-heading font-bold text-sm text-soil-400">準備中</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-soil-800/50 mb-1">📏 水位</p>
+                  <p className="font-heading font-bold text-sm text-soil-400">準備中</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* 成長グラフ */}
