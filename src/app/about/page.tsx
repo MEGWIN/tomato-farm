@@ -184,6 +184,31 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* 栽培メンバー */}
+        <section className="mb-16">
+          <h2 className="font-heading font-black text-3xl text-soil-900 text-center mb-10">
+            <span className="text-leaf-500 mr-2">🌱</span>栽培メンバー
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { name: "プチトマト１", emoji: "🍅" },
+              { name: "プチトマト２", emoji: "🍅" },
+              { name: "プチトマト３", emoji: "🍅" },
+              { name: "バジル", emoji: "🌿" },
+            ].map((plant) => (
+              <div
+                key={plant.name}
+                className="text-center p-4 rounded-xl bg-soil-50 border border-leaf-100"
+              >
+                <span className="text-3xl block mb-2">{plant.emoji}</span>
+                <p className="font-heading font-bold text-sm text-soil-900">
+                  {plant.name}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* 使ってる道具 */}
         <AffiliateTools />
 
