@@ -15,6 +15,16 @@ const PLANTS = [
   { id: 3, name: "プチトマト３", emoji: "🍅", color: "#EAB308" },
 ] as const;
 
+const CULTIVATION_START = "2026-03-10"; // 1日目
+
+/** 栽培開始日からの経過日数（開始日=1日目） */
+function daysSinceStart(dateStr: string): number {
+  const start = new Date(CULTIVATION_START + "T00:00:00");
+  const target = new Date(dateStr + "T00:00:00");
+  const diffMs = target.getTime() - start.getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+}
+
 export default async function CultivationDashboard() {
   let stats = { plants: [], allLogs: [], harvestTotals: {} } as Awaited<
     ReturnType<typeof getCultivationStats>
@@ -108,7 +118,7 @@ export default async function CultivationDashboard() {
                   <div className="text-center">
                     <p className="text-xs font-bold text-soil-800/50 mb-1">栽培日数</p>
                     <p className="font-heading font-black text-xl text-leaf-600">
-                      {latest ? `${latest.day_number}日目` : "--"}
+                      {latest ? `${daysSinceStart(latest.date)}日目` : "--"}
                     </p>
                   </div>
                   <div className="text-center">
