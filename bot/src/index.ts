@@ -28,6 +28,17 @@ client.once("ready", () => {
   console.log(`🍅 Bot起動: ${client.user?.tag}`);
 });
 
+/** JST基準の日付（朝4時境界）を取得 */
+function getJstDateString(): string {
+  const now = new Date();
+  const jstMs = now.getTime() + 9 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000;
+  const shifted = new Date(jstMs);
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 /** 栽培ログをSupabaseに保存 */
 async function saveCultivationLog(
   day: number,
@@ -35,7 +46,7 @@ async function saveCultivationLog(
   slug: string | null,
   note: string | null
 ) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getJstDateString();
   const { error } = await supabase.from("cultivation_logs").insert({
     date: today,
     day_number: day,
@@ -52,7 +63,7 @@ async function saveCultivationLog(
 
 /** 栽培ログの草丈を更新 */
 async function updateCultivationLogHeight(day: number, heightCm: number) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getJstDateString();
   const { error } = await supabase
     .from("cultivation_logs")
     .update({ height_cm: heightCm })
@@ -101,12 +112,59 @@ async function askForHeight(message: Message, day: number) {
   }
 }
 
+/** 全角→半角の数字変換 */
+function normalizeDigits(s: string): string {
+  return s.replace(/[０-９]/g, (c) =>
+    String.fromCharCode(c.charCodeAt(0) - 0xfee0)
+  );
+}
+
+/** 「1号5個収穫」のようなメッセージをパース */
+function parseHarvest(text: string): { plantId: number; count: number } | null {
+  const t = normalizeDigits(text);
+  const m = t.match(/(\d+)\s*号[^0-9]*?(\d+)\s*個/);
+  if (!m) return null;
+  const plantId = parseInt(m[1], 10);
+  const count = parseInt(m[2], 10);
+  if (![1, 2, 3].includes(plantId)) return null;
+  if (count <= 0 || count > 1000) return null;
+  return { plantId, count };
+}
+
 client.on("messageCreate", async (message: Message) => {
   // Bot自身のメッセージは無視
   if (message.author.bot) return;
 
   // 指定チャンネルのみ
   if (message.channelId !== CHANNEL_ID) return;
+
+  // 収穫コマンド: 「1号5個収穫」など（画像不要）
+  const harvestParsed = parseHarvest(message.content);
+  if (harvestParsed && /収穫|とれた|採れた/.test(message.content)) {
+    const today = getJstDateString();
+    const { error } = await supabase.from("harvests").insert({
+      plant_id: harvestParsed.plantId,
+      date: today,
+      count: harvestParsed.count,
+    });
+    if (error) {
+      await message.reply(`❌ 収穫の保存に失敗: ${error.message}`);
+      return;
+    }
+    const { data: totals } = await supabase
+      .from("harvests")
+      .select("count")
+      .eq("plant_id", harvestParsed.plantId);
+    const total = (totals ?? []).reduce(
+      (sum, r) => sum + (r.count as number),
+      0
+    );
+    await message.reply(
+      `🍅 ${harvestParsed.plantId}号 ${harvestParsed.count}個 収穫を記録したぜ！\n` +
+        `累計: ${total}個`
+    );
+    return;
+  }
 
   // 画像がない場合は無視
   const imageAttachments = message.attachments.filter((a) =>

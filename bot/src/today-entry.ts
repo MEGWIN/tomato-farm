@@ -9,11 +9,18 @@ type TodayState = {
   entryId: string;
 };
 
+/**
+ * JST基準で「今日」の日付文字列を返す。
+ * 日付変更線は朝4時JST（深夜0〜4時は前日扱い）。
+ */
 function getTodayDateString(): string {
   const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
+  // UTC→JST変換（+9h）してから4時間引く → 朝4時が日付境界
+  const jstMs = now.getTime() + 9 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000;
+  const shifted = new Date(jstMs);
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(shifted.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
 

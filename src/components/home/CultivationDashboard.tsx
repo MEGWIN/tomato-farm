@@ -16,7 +16,7 @@ const PLANTS = [
 ] as const;
 
 export default async function CultivationDashboard() {
-  let stats = { plants: [], allLogs: [] } as Awaited<
+  let stats = { plants: [], allLogs: [], harvestTotals: {} } as Awaited<
     ReturnType<typeof getCultivationStats>
   >;
   let weekly: Awaited<ReturnType<typeof getWeeklyForecast>> = [];
@@ -104,13 +104,21 @@ export default async function CultivationDashboard() {
                 </div>
 
                 {/* 基本データ */}
-                <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="grid grid-cols-2 gap-2 mb-3">
                   <div className="text-center">
                     <p className="text-xs font-bold text-soil-800/50 mb-1">栽培日数</p>
                     <p className="font-heading font-black text-xl text-leaf-600">
                       {latest ? `${latest.day_number}日目` : "--"}
                     </p>
                   </div>
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-soil-800/50 mb-1">🍅 累計収穫</p>
+                    <p className="font-heading font-black text-xl text-tomato-500">
+                      {(stats.harvestTotals[plant.id] ?? 0)}個
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-4">
                   <div className="text-center">
                     <p className="text-xs font-bold text-soil-800/50 mb-1">草丈</p>
                     <p className="font-heading font-black text-xl text-leaf-600">

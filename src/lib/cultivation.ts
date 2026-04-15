@@ -18,9 +18,19 @@ export interface PlantStats {
   logs: CultivationLog[];
 }
 
+export interface Harvest {
+  id: number;
+  plant_id: number;
+  date: string;
+  count: number;
+  note: string | null;
+  created_at: string;
+}
+
 export interface CultivationStats {
   plants: PlantStats[];
   allLogs: CultivationLog[];
+  harvestTotals: Record<number, number>;
 }
 
 export const PLANT_IDS = [1, 2, 3] as const;
@@ -39,9 +49,28 @@ export async function getCultivationLogs(): Promise<CultivationLog[]> {
   return data ?? [];
 }
 
+/** 収穫累計を株ごとに取得 */
+export async function getHarvestTotals(): Promise<Record<number, number>> {
+  const { data, error } = await supabase
+    .from("harvests")
+    .select("plant_id, count");
+  if (error) {
+    console.error("収穫取得失敗:", error.message);
+    return {};
+  }
+  const totals: Record<number, number> = {};
+  for (const row of (data ?? []) as Pick<Harvest, "plant_id" | "count">[]) {
+    totals[row.plant_id] = (totals[row.plant_id] ?? 0) + row.count;
+  }
+  return totals;
+}
+
 /** 株ごとに最新・前回・ログを集計 */
 export async function getCultivationStats(): Promise<CultivationStats> {
-  const allLogs = await getCultivationLogs();
+  const [allLogs, harvestTotals] = await Promise.all([
+    getCultivationLogs(),
+    getHarvestTotals(),
+  ]);
 
   const plants: PlantStats[] = PLANT_IDS.map((plantId) => {
     const logs = allLogs.filter((l) => l.plant_id === plantId);
@@ -59,5 +88,5 @@ export async function getCultivationStats(): Promise<CultivationStats> {
     return { plantId, latestLog, previousLog, logs };
   });
 
-  return { plants, allLogs };
+  return { plants, allLogs, harvestTotals };
 }
