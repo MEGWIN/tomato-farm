@@ -209,6 +209,32 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* リタイアメンバー（追悼） */}
+        <section className="mb-16">
+          <h2 className="font-heading font-black text-3xl text-soil-900 text-center mb-3">
+            <span className="mr-2">🪦</span>リタイアメンバー
+          </h2>
+          <p className="text-center text-soil-800/60 text-sm mb-8">追悼</p>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { name: "バジル１", emoji: "🌿", cause: "凍死" },
+              { name: "バジル２", emoji: "🌿", cause: "凍死" },
+              { name: "バジル３", emoji: "🌿", cause: "凍死" },
+            ].map((plant) => (
+              <div
+                key={plant.name}
+                className="text-center p-4 rounded-xl bg-soil-100/50 border border-soil-200 grayscale opacity-70"
+              >
+                <span className="text-3xl block mb-2">{plant.emoji}</span>
+                <p className="font-heading font-bold text-sm text-soil-900">
+                  {plant.name}
+                </p>
+                <p className="text-xs text-soil-800/60 mt-1">{plant.cause}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* 使ってる道具 */}
         <AffiliateTools />
 
