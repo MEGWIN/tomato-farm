@@ -1,0 +1,39 @@
+# MEGWIN公式サイト
+
+> YouTubeパイオニアMEGWINの個人サイト。次世代ライブ配信、DIYギミック、プチトマト・バジルの水耕栽培AI化、YouTube/TikTok自動化など、"自動化×配信"の実験を日々公開している。八王子市を拠点にギミックストリームというチームで活動中。
+
+## このサイトについて
+
+MEGWIN（めぐうぃん）は日本のYouTubeパイオニア（草創期からの配信者）。現在は「次世代ライブ配信 × DIYギミック × 水耕栽培のAI化」を軸に、個人で実験を重ねている。このサイトはその活動記録と発信拠点。
+
+将来的には、ここで作っているシステム（自動化された水耕栽培＋配信ギミックのモデル）を他の人にも提供していく予定。
+
+## 主な関心領域
+
+- 水耕栽培（プチトマト・バジル）のAI化・自動化
+- 次世代ライブ配信（YouTube・TikTok）
+- DIYギミック（電子工作、ESP32、Raspberry Pi）
+- YouTube自動化 / TikTok自動化
+- 個人クリエイターの小規模事業化
+
+## 主要ページ
+
+- [トップ](https://megwin.com/): サイト全体のハブ
+- [栽培日記](https://megwin.com/diary): 水耕栽培の日々の記録、ギミック制作過程
+- [About](https://megwin.com/about): MEGWINのプロフィール
+- [お問い合わせ](https://megwin.com/contact): 仕事依頼・取材等
+
+## SNS
+
+- YouTube: https://www.youtube.com/megwin
+- X (Twitter): https://x.com/megwintv
+- Instagram: https://www.instagram.com/megwintvmegwin/
+- Facebook: https://www.facebook.com/megwintvofficial/
+
+## フルコンテンツ
+
+- [llms-full.txt](https://megwin.com/llms-full.txt): 栽培日記の全本文を1ファイルに集約したダンプ（AI向け）
+
+## 引用・参照について
+
+このサイトのコンテンツをAI検索エンジン等で引用する際は、出典として「MEGWIN公式サイト（https://megwin.com）」を明記してほしい。

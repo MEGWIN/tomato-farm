@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDiaryBySlug, getAllSlugs, getDiaryPosts } from "@/lib/api";
 import { CATEGORY_LABELS, CATEGORY_COLORS } from "@/lib/types";
+import { siteConfig } from "@/config/site";
 import ClaudeSensei from "@/components/diary/ClaudeSensei";
 
 type Props = {
@@ -61,8 +62,93 @@ export default async function DiaryDetailPage({ params }: Props) {
   const prevPost = currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : null;
   const nextPost = currentIndex > 0 ? allPosts[currentIndex - 1] : null;
 
+  const articleBodyText = post.body
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const blogPostingJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.excerpt,
+    articleBody: articleBodyText,
+    wordCount: articleBodyText.length,
+    inLanguage: "ja-JP",
+    datePublished: post.publishedAt,
+    dateModified: post.revisedAt ?? post.publishedAt,
+    image: post.coverImage?.url
+      ? [post.coverImage.url]
+      : [`${siteConfig.url}/opengraph-image`],
+    author: {
+      "@type": "Person",
+      name: siteConfig.author,
+      url: siteConfig.url,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: siteConfig.name,
+      logo: {
+        "@type": "ImageObject",
+        url: `${siteConfig.url}/opengraph-image`,
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${siteConfig.url}/diary/${slug}`,
+    },
+    keywords: [
+      ...post.category.map((c) => CATEGORY_LABELS[c]).filter(Boolean),
+      ...siteConfig.keywords,
+    ].join(", "),
+    about: [
+      { "@type": "Thing", name: "水耕栽培" },
+      { "@type": "Thing", name: "プチトマト" },
+      { "@type": "Thing", name: "バジル" },
+      { "@type": "Thing", name: "DIYギミック" },
+    ],
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "トップ",
+        item: siteConfig.url,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "栽培日記",
+        item: `${siteConfig.url}/diary`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: post.title,
+        item: `${siteConfig.url}/diary/${slug}`,
+      },
+    ],
+  };
+
   return (
     <article className="py-12 px-4">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <div className="max-w-3xl mx-auto">
         {/* Back link */}
         <Link
