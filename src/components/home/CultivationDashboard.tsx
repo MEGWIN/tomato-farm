@@ -74,11 +74,12 @@ export default async function CultivationDashboard() {
       ? `${plant3Latest.water_level_cm}cm`
       : "準備中";
 
-  // 総合グラフ用データ（24時間分、水温・水位のみ）
+  // 総合グラフ用データ（24時間分、水温・水位のみ）— JST表示
   const integratedChartData: IntegratedPoint[] = plant3History.map((log) => {
     const d = new Date(log.created_at);
-    const h = String(d.getHours()).padStart(2, "0");
-    const m = String(d.getMinutes()).padStart(2, "0");
+    const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+    const h = String(jst.getUTCHours()).padStart(2, "0");
+    const m = String(jst.getUTCMinutes()).padStart(2, "0");
     return {
       time: `${h}:${m}`,
       timestamp: d.getTime(),
@@ -266,7 +267,7 @@ export default async function CultivationDashboard() {
             <span className="text-tomato-500">🍅</span> プチトマト３ 総合グラフ
           </h3>
           <p className="text-xs text-soil-800/50 mb-4">
-            直近24時間・1時間ごと / 水温(°C)・水位(cm)
+            直近24時間・10分ごと / 水温(°C)・水位(cm)
           </p>
           <Plant3IntegratedChart data={integratedChartData} />
         </div>

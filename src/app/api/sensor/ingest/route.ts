@@ -35,10 +35,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid plant_id" }, { status: 400 });
   }
 
+  // 異常値フィルタ: DS18B20の85°C（電源投入時デフォルト値）、TDS 0ppm（センサー未接触）
+  const rawTemp = isFiniteNumber(body.water_temp) ? body.water_temp : null;
+  const rawTds = isFiniteNumber(body.tds_ppm) ? Math.round(body.tds_ppm) : null;
+
   const row = {
     plant_id: Math.round(body.plant_id),
-    water_temp: isFiniteNumber(body.water_temp) ? body.water_temp : null,
-    tds_ppm: isFiniteNumber(body.tds_ppm) ? Math.round(body.tds_ppm) : null,
+    water_temp: rawTemp != null && rawTemp !== 85 ? rawTemp : null,
+    tds_ppm: rawTds != null && rawTds > 0 ? rawTds : null,
     water_level_cm: isFiniteNumber(body.water_level_cm) ? body.water_level_cm : null,
     device_id: typeof body.device_id === "string" ? body.device_id.slice(0, 64) : null,
   };
