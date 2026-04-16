@@ -18,9 +18,10 @@ function isFiniteNumber(n: unknown): n is number {
 }
 
 export async function POST(req: Request) {
-  const auth = req.headers.get("authorization") ?? "";
-  const expected = `Bearer ${process.env.SENSOR_INGEST_TOKEN ?? ""}`;
-  if (!process.env.SENSOR_INGEST_TOKEN || auth !== expected) {
+  const auth = (req.headers.get("authorization") ?? "").trim();
+  const token = (process.env.SENSOR_INGEST_TOKEN ?? "").trim();
+  const expected = `Bearer ${token}`;
+  if (!token || auth !== expected) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
