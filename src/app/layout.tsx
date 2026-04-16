@@ -21,11 +21,15 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
   title: {
     default: siteConfig.name,
     template: `%s | ${siteConfig.shortName}`,
   },
   description: siteConfig.description,
+  keywords: [...siteConfig.keywords],
+  authors: [{ name: siteConfig.author, url: siteConfig.url }],
+  creator: siteConfig.author,
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -45,6 +49,9 @@ export const metadata: Metadata = {
     title: siteConfig.name,
     description: siteConfig.description,
   },
+  alternates: {
+    canonical: siteConfig.url,
+  },
 };
 
 export const viewport: Viewport = {
@@ -56,12 +63,52 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const personJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: siteConfig.author,
+    alternateName: "めぐうぃん",
+    url: siteConfig.url,
+    image: `${siteConfig.url}/opengraph-image`,
+    description: siteConfig.description,
+    jobTitle: "YouTuber / ライブ配信者 / ギミック制作",
+    affiliation: {
+      "@type": "Organization",
+      name: "ギミックストリーム",
+    },
+    sameAs: [
+      siteConfig.social.youtube,
+      siteConfig.social.x,
+      siteConfig.social.instagram,
+      siteConfig.social.facebook,
+    ],
+    knowsAbout: [...siteConfig.keywords],
+  };
+
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: siteConfig.name,
+    url: siteConfig.url,
+    description: siteConfig.description,
+    inLanguage: "ja-JP",
+    author: { "@type": "Person", name: siteConfig.author },
+  };
+
   return (
     <html
       lang="ja"
       className={`${zenMaruGothic.variable} ${notoSansJP.variable} h-full`}
     >
       <body className="min-h-full flex flex-col antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         <ServiceWorkerRegistrar />
         <Header />
         <main className="flex-1">{children}</main>

@@ -98,7 +98,10 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-4 text-center text-soil-200 text-xs">
+        <div className="mt-8 pt-4 text-center text-soil-200 text-xs space-y-2">
+          <p className="text-soil-200/40">
+            水耕栽培×配信ギミックのモデル販売 近日公開
+          </p>
           <p>&copy; {new Date().getFullYear()} {siteConfig.author}. Powered by Claude &amp; Next.js</p>
         </div>
       </div>

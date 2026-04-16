@@ -35,7 +35,7 @@ export default function DiaryCard({ post }: { post: DiaryPost }) {
               <img
                 key={i}
                 src={url}
-                alt=""
+                alt={`${post.title} 画像${i + 1}`}
                 className="w-1/2 h-full object-cover"
               />
             ))}
