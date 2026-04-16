@@ -7,7 +7,15 @@ import {
   evaluateBasilRisk,
   type PlantRisk,
 } from "@/lib/weather";
+import {
+  getLatestWaterSensor,
+  getWaterSensorHistory,
+  waterLevelPercent,
+} from "@/lib/water-sensor";
 import GrowthChart from "./GrowthChart";
+import Plant3IntegratedChart, {
+  type IntegratedPoint,
+} from "./Plant3IntegratedChart";
 
 const PLANTS = [
   { id: 1, name: "プチトマト１", emoji: "🍅", color: "#EF4444" },
@@ -31,16 +39,53 @@ export default async function CultivationDashboard() {
   >;
   let weekly: Awaited<ReturnType<typeof getWeeklyForecast>> = [];
   let hourly: Awaited<ReturnType<typeof getHourlyForecast>> = [];
+  let plant3Latest: Awaited<ReturnType<typeof getLatestWaterSensor>> = null;
+  let plant3History: Awaited<ReturnType<typeof getWaterSensorHistory>> = [];
 
   try {
-    [stats, weekly, hourly] = await Promise.all([
+    [stats, weekly, hourly, plant3Latest, plant3History] = await Promise.all([
       getCultivationStats(),
       getWeeklyForecast(),
       getHourlyForecast(),
+      getLatestWaterSensor(3),
+      getWaterSensorHistory(3, 24),
     ]);
   } catch (e) {
     console.error("Dashboard data fetch failed:", e);
   }
+
+  // 3号の水センサー最新値をカードに表示用整形
+  const plant3WaterTemp =
+    plant3Latest?.water_temp != null ? `${plant3Latest.water_temp}°C` : "準備中";
+
+  // TDS警報: 1400ppm未満で警告（肥料薄すぎ）、1400ppm以上は正常範囲
+  const plant3TdsAlert =
+    plant3Latest?.tds_ppm != null && plant3Latest.tds_ppm < 1400;
+  const plant3TdsLabel =
+    plant3Latest?.tds_ppm == null
+      ? "準備中"
+      : plant3TdsAlert
+        ? `⚠ ${plant3Latest.tds_ppm}ppm`
+        : `✓ ${plant3Latest.tds_ppm}ppm`;
+
+  const plant3LevelPct = waterLevelPercent(plant3Latest?.water_level_cm ?? null);
+  const plant3LevelLabel =
+    plant3Latest?.water_level_cm != null
+      ? `${plant3Latest.water_level_cm}cm`
+      : "準備中";
+
+  // 総合グラフ用データ（24時間分、水温・水位のみ）
+  const integratedChartData: IntegratedPoint[] = plant3History.map((log) => {
+    const d = new Date(log.created_at);
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    return {
+      time: `${h}:${m}`,
+      timestamp: d.getTime(),
+      water_temp: log.water_temp,
+      water_level_cm: log.water_level_cm,
+    };
+  });
 
   // 株ごとのデータをID順に取り出す
   const plantStatsById = new Map(stats.plants.map((p) => [p.plantId, p]));
@@ -150,19 +195,49 @@ export default async function CultivationDashboard() {
                   </div>
                 </div>
 
-                {/* センサーデータ（準備中） */}
+                {/* センサーデータ（3号のみ実データ、1・2号は準備中） */}
                 <div className="grid grid-cols-3 gap-2 pt-3 border-t border-dashed border-soil-200">
                   <div className="text-center">
                     <p className="text-xs font-bold text-soil-800/50 mb-1">💧 水温</p>
-                    <p className="font-heading font-bold text-sm text-soil-400">準備中</p>
+                    <p
+                      className={`font-heading font-bold text-sm ${
+                        plant.id === 3 && plant3Latest?.water_temp != null
+                          ? "text-blue-500"
+                          : "text-soil-400"
+                      }`}
+                    >
+                      {plant.id === 3 ? plant3WaterTemp : "準備中"}
+                    </p>
                   </div>
                   <div className="text-center">
                     <p className="text-xs font-bold text-soil-800/50 mb-1">🧪 水質</p>
-                    <p className="font-heading font-bold text-sm text-soil-400">準備中</p>
+                    <p
+                      className={`font-heading font-bold text-sm ${
+                        plant.id === 3 && plant3Latest?.tds_ppm != null
+                          ? plant3TdsAlert
+                            ? "text-tomato-500"
+                            : "text-emerald-500"
+                          : "text-soil-400"
+                      }`}
+                    >
+                      {plant.id === 3 ? plant3TdsLabel : "準備中"}
+                    </p>
                   </div>
                   <div className="text-center">
                     <p className="text-xs font-bold text-soil-800/50 mb-1">📏 水位</p>
-                    <p className="font-heading font-bold text-sm text-soil-400">準備中</p>
+                    <p
+                      className={`font-heading font-bold text-sm ${
+                        plant.id === 3 && plant3Latest?.water_level_cm != null
+                          ? "text-purple-500"
+                          : "text-soil-400"
+                      }`}
+                    >
+                      {plant.id === 3
+                        ? plant3LevelPct != null
+                          ? `${plant3LevelLabel} (${plant3LevelPct}%)`
+                          : plant3LevelLabel
+                        : "準備中"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -183,6 +258,17 @@ export default async function CultivationDashboard() {
               color: p.color,
             }))}
           />
+        </div>
+
+        {/* 🍅3号 総合グラフ（直近24時間） */}
+        <div className="bg-white rounded-2xl shadow-sm border border-leaf-200/50 p-6">
+          <h3 className="font-heading font-bold text-lg text-soil-900 mb-1 flex items-center gap-2">
+            <span className="text-tomato-500">🍅</span> プチトマト３ 総合グラフ
+          </h3>
+          <p className="text-xs text-soil-800/50 mb-4">
+            直近24時間・1時間ごと / 水温(°C)・水位(cm)
+          </p>
+          <Plant3IntegratedChart data={integratedChartData} />
         </div>
 
         {/* 3時間ごとの予報 */}
