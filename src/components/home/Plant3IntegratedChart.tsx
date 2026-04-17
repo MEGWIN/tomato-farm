@@ -15,7 +15,7 @@ export interface IntegratedPoint {
   time: string;
   timestamp: number;
   water_temp: number | null;
-  water_level_cm: number | null;
+  tds_ppm: number | null;
 }
 
 interface Props {
@@ -43,7 +43,15 @@ export default function Plant3IntegratedChart({ data }: Props) {
             axisLine={{ stroke: "#E8D5D5" }}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: "#6B5B4F" }}
+            yAxisId="temp"
+            tick={{ fontSize: 11, fill: "#3B82F6" }}
+            tickLine={false}
+            axisLine={{ stroke: "#E8D5D5" }}
+          />
+          <YAxis
+            yAxisId="ppm"
+            orientation="right"
+            tick={{ fontSize: 11, fill: "#10B981" }}
             tickLine={false}
             axisLine={{ stroke: "#E8D5D5" }}
           />
@@ -56,12 +64,13 @@ export default function Plant3IntegratedChart({ data }: Props) {
             formatter={(value, name) => {
               const n = Number(value);
               if (name === "水温") return [`${n}°C`, name];
-              if (name === "水位") return [`${n} cm`, name];
+              if (name === "水質") return [`${n} ppm`, name];
               return [value, name];
             }}
           />
           <Legend wrapperStyle={{ fontSize: "13px" }} />
           <Line
+            yAxisId="temp"
             type="monotone"
             dataKey="water_temp"
             name="水温"
@@ -71,12 +80,13 @@ export default function Plant3IntegratedChart({ data }: Props) {
             connectNulls
           />
           <Line
+            yAxisId="ppm"
             type="monotone"
-            dataKey="water_level_cm"
-            name="水位"
-            stroke="#A855F7"
+            dataKey="tds_ppm"
+            name="水質"
+            stroke="#10B981"
             strokeWidth={2.5}
-            dot={{ fill: "#A855F7", r: 3 }}
+            dot={{ fill: "#10B981", r: 3 }}
             connectNulls
           />
         </ComposedChart>
