@@ -267,7 +267,7 @@ export default async function CultivationDashboard() {
             <span className="text-tomato-500">🍅</span> プチトマト３ 総合グラフ
           </h3>
           <p className="text-xs text-soil-800/50 mb-4">
-            直近24時間・10分ごと / 水温(°C)・水位(cm)
+            直近24時間・30分ごと / 水温(°C)・水位(cm)
           </p>
           <Plant3IntegratedChart data={integratedChartData} />
         </div>

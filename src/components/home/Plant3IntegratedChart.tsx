@@ -26,7 +26,7 @@ export default function Plant3IntegratedChart({ data }: Props) {
   if (data.length === 0) {
     return (
       <div className="h-48 flex items-center justify-center text-soil-800/40">
-        <p>まだセンサーデータがないぜ...10分ごとに更新されるぞ！</p>
+        <p>まだセンサーデータがないぜ...30分ごとに更新されるぞ！</p>
       </div>
     );
   }
