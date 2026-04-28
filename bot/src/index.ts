@@ -1,7 +1,7 @@
 import { Client, GatewayIntentBits, Partials, type Message } from "discord.js";
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
-import { generateArticle, generateAppendContent } from "./generate-article";
+import { generateArticle, generateAppendContent, extractHeightsFromComment } from "./generate-article";
 import { postToCms, uploadImageToCms, getCmsEntry, updateCmsEntry, getLatestDayNumber } from "./post-to-cms";
 import { getTodayEntryId, saveTodayEntryId } from "./today-entry";
 
@@ -39,52 +39,88 @@ function getJstDateString(): string {
   return `${y}-${m}-${d}`;
 }
 
-/** 栽培ログをSupabaseに保存 */
-async function saveCultivationLog(
+/**
+ * 栽培ログをSupabaseに保存（株ごとに1レコード）。
+ * - heightsByPlant に書かれた株はそれぞれ INSERT
+ * - 草丈ゼロ件のときは記事メタデータ用に1号だけ height_cm=null で INSERT
+ * - diary_slug は書かれた中で最若番の plant_id にだけ付与（草丈ゼロなら1号）
+ */
+async function saveCultivationLogs(
   day: number,
-  heightCm: number | null,
+  heightsByPlant: Record<number, number>,
   slug: string | null,
   note: string | null
 ) {
   const today = getJstDateString();
-  const { error } = await supabase.from("cultivation_logs").insert({
+  const writtenPlantIds = [1, 2, 3].filter((id) => heightsByPlant[id] != null);
+  const plantsToSave = writtenPlantIds.length > 0 ? writtenPlantIds : [1];
+  const slugPlantId = plantsToSave[0];
+
+  const records = plantsToSave.map((plantId) => ({
     date: today,
     day_number: day,
-    height_cm: heightCm,
-    diary_slug: slug,
-    note,
-  });
+    plant_id: plantId,
+    height_cm: heightsByPlant[plantId] ?? null,
+    diary_slug: plantId === slugPlantId ? slug : null,
+    note: plantId === slugPlantId ? note : null,
+  }));
+
+  const { error } = await supabase.from("cultivation_logs").insert(records);
   if (error) {
     console.error("栽培ログ保存失敗:", error.message);
   } else {
-    console.log("📊 栽培ログ保存完了: Day", day, heightCm ? `${heightCm}cm` : "(草丈なし)");
+    const summary = records
+      .map((r) => `${r.plant_id}号:${r.height_cm ?? "なし"}cm`)
+      .join(" / ");
+    console.log("📊 栽培ログ保存完了: Day", day, summary);
   }
 }
 
-/** 栽培ログの草丈を更新 */
-async function updateCultivationLogHeight(day: number, heightCm: number) {
+/** 指定株の草丈をUPSERT（既存があればUPDATE、なければINSERT） */
+async function upsertCultivationLogHeight(
+  day: number,
+  plantId: number,
+  heightCm: number
+) {
   const today = getJstDateString();
-  const { error } = await supabase
+  const { data: existing } = await supabase
     .from("cultivation_logs")
-    .update({ height_cm: heightCm })
+    .select("id")
     .eq("date", today)
-    .eq("day_number", day);
-  if (error) {
-    console.error("草丈更新失敗:", error.message);
+    .eq("day_number", day)
+    .eq("plant_id", plantId)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from("cultivation_logs")
+      .update({ height_cm: heightCm })
+      .eq("id", existing.id);
+    if (error) console.error(`${plantId}号草丈更新失敗:`, error.message);
+    else console.log(`📏 ${plantId}号草丈更新: ${heightCm}cm`);
   } else {
-    console.log("📏 草丈更新完了:", heightCm, "cm");
+    const { error } = await supabase.from("cultivation_logs").insert({
+      date: today,
+      day_number: day,
+      plant_id: plantId,
+      height_cm: heightCm,
+    });
+    if (error) console.error(`${plantId}号草丈追加失敗:`, error.message);
+    else console.log(`📏 ${plantId}号草丈追加: ${heightCm}cm`);
   }
 }
 
-/** Discordで草丈を質問し、返答を待つ */
-async function askForHeight(message: Message, day: number) {
-  await message.channel.send("📏 今日の草丈は何cm？（例: 27、スキップするなら「なし」）");
+/** Discordで草丈を質問し、返答を待つ（3株対応） */
+async function askForHeights(message: Message, day: number) {
+  await message.channel.send(
+    "📏 今日の草丈は？（例: `1号3cm 2号5cm 3号4cm`、全部スキップなら「なし」）"
+  );
 
   try {
     const collected = await message.channel.awaitMessages({
       filter: (m) => m.author.id === message.author.id,
       max: 1,
-      time: 120_000, // 2分待つ
+      time: 120_000,
     });
 
     const reply = collected.first();
@@ -96,18 +132,20 @@ async function askForHeight(message: Message, day: number) {
       return;
     }
 
-    // テキストから数値を抽出（「大体27cmかな」「27」「27cm」等に対応）
-    const numMatch = text.match(/(\d+(?:\.\d+)?)/);
-    const height = numMatch ? parseFloat(numMatch[1]) : NaN;
-    if (isNaN(height) || height <= 0 || height > 1000) {
-      await reply.reply("🤔 数値が読み取れなかったぜ...次回でOK！");
+    const heights = extractHeightsFromComment(text);
+    const entries = Object.entries(heights);
+    if (entries.length === 0) {
+      await reply.reply("🤔 草丈が読み取れなかったぜ...次回でOK！（例: 1号3cm 2号5cm 3号4cm）");
       return;
     }
 
-    await updateCultivationLogHeight(day, height);
-    await reply.reply(`✅ 草丈 ${height}cm を記録したぜ！`);
+    for (const [plantIdStr, cm] of entries) {
+      await upsertCultivationLogHeight(day, parseInt(plantIdStr, 10), cm);
+    }
+
+    const summary = entries.map(([id, cm]) => `${id}号${cm}cm`).join(" / ");
+    await reply.reply(`✅ 草丈記録: ${summary}`);
   } catch {
-    // タイムアウト - 何もしない
     console.log("草丈質問タイムアウト（スキップ）");
   }
 }
@@ -119,7 +157,7 @@ function normalizeDigits(s: string): string {
   );
 }
 
-/** 「1号5個収穫」のようなメッセージをパース */
+/** 「1号5個収穫」のようなメッセージをパース（収穫専用、草丈の cm パターンは除外） */
 function parseHarvest(text: string): { plantId: number; count: number } | null {
   const t = normalizeDigits(text);
   const m = t.match(/(\d+)\s*号[^0-9]*?(\d+)\s*個/);
@@ -250,10 +288,13 @@ client.on("messageCreate", async (message: Message) => {
       // 今日のエントリIDを保存
       saveTodayEntryId(cmsResult.id);
 
-      // 栽培ログをSupabaseに保存
-      await saveCultivationLog(
+      // コメントから3株分の草丈を抽出
+      const heightsByPlant = extractHeightsFromComment(userText);
+
+      // 栽培ログをSupabaseに保存（株ごとに1レコード）
+      await saveCultivationLogs(
         nextDay,
-        article.heightCm,
+        heightsByPlant,
         article.slug,
         null
       );
@@ -265,9 +306,9 @@ client.on("messageCreate", async (message: Message) => {
         `🔗 確認・公開はこちら → ${cmsEditUrl}`
       );
 
-      // 草丈が取れなかった場合、Discordで質問
-      if (article.heightCm == null) {
-        await askForHeight(message, nextDay);
+      // 3株とも草丈が取れなかった場合のみDiscordで質問
+      if (Object.keys(heightsByPlant).length === 0) {
+        await askForHeights(message, nextDay);
       }
     }
   } catch (error) {

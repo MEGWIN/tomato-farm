@@ -1,7 +1,7 @@
 import { Client, GatewayIntentBits, Partials } from "discord.js";
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
-import { generateArticle, generateAppendContent } from "./generate-article";
+import { generateArticle, generateAppendContent, extractHeightsFromComment } from "./generate-article";
 import { postToCms, uploadImageToCms, getCmsEntry, updateCmsEntry, getLatestDayNumber } from "./post-to-cms";
 import { getTodayEntryId, saveTodayEntryId } from "./today-entry";
 
@@ -26,25 +26,40 @@ function getJstDateString(): string {
   return `${y}-${m}-${d}`;
 }
 
-/** 栽培ログをSupabaseに保存 */
-async function saveCultivationLog(
+/**
+ * 栽培ログをSupabaseに保存（株ごとに1レコード）。
+ * - heightsByPlant に書かれた株はそれぞれ INSERT
+ * - 草丈ゼロ件のときは記事メタデータ用に1号だけ height_cm=null で INSERT
+ * - diary_slug は書かれた中で最若番の plant_id にだけ付与
+ */
+async function saveCultivationLogs(
   day: number,
-  heightCm: number | null,
+  heightsByPlant: Record<number, number>,
   slug: string | null,
   note: string | null
 ) {
   const today = getJstDateString();
-  const { error } = await supabase.from("cultivation_logs").insert({
+  const writtenPlantIds = [1, 2, 3].filter((id) => heightsByPlant[id] != null);
+  const plantsToSave = writtenPlantIds.length > 0 ? writtenPlantIds : [1];
+  const slugPlantId = plantsToSave[0];
+
+  const records = plantsToSave.map((plantId) => ({
     date: today,
     day_number: day,
-    height_cm: heightCm,
-    diary_slug: slug,
-    note,
-  });
+    plant_id: plantId,
+    height_cm: heightsByPlant[plantId] ?? null,
+    diary_slug: plantId === slugPlantId ? slug : null,
+    note: plantId === slugPlantId ? note : null,
+  }));
+
+  const { error } = await supabase.from("cultivation_logs").insert(records);
   if (error) {
     console.error("栽培ログ保存失敗:", error.message);
   } else {
-    console.log("📊 栽培ログ保存完了: Day", day, heightCm ? `${heightCm}cm` : "(草丈なし)");
+    const summary = records
+      .map((r) => `${r.plant_id}号:${r.height_cm ?? "なし"}cm`)
+      .join(" / ");
+    console.log("📊 栽培ログ保存完了: Day", day, summary);
   }
 }
 
@@ -160,9 +175,10 @@ async function main() {
 
       saveTodayEntryId(cmsResult.id);
 
-      await saveCultivationLog(
+      const heightsByPlant = extractHeightsFromComment(userText);
+      await saveCultivationLogs(
         nextDay,
-        article.heightCm,
+        heightsByPlant,
         article.slug,
         null
       );
