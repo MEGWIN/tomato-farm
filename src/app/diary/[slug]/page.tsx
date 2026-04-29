@@ -168,9 +168,6 @@ export default async function DiaryDetailPage({ params }: Props) {
             >
               {CATEGORY_LABELS[post.category[0]]}
             </span>
-            <span className="text-xs font-bold text-tomato-500 bg-tomato-50 px-3 py-1 rounded-full">
-              Day {post.day}
-            </span>
             <span className="text-xs text-soil-800/50">
               {new Date(post.publishedAt).toLocaleDateString("ja-JP")}
             </span>

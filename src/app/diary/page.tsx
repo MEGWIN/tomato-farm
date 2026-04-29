@@ -12,7 +12,6 @@ export const metadata: Metadata = {
 
 export default async function DiaryPage() {
   const { contents: posts } = await getDiaryPosts(0, 50);
-  const latestDay = posts.length > 0 ? Math.max(...posts.map((p) => p.day)) : null;
 
   return (
     <div className="py-12 px-4">
@@ -22,11 +21,6 @@ export default async function DiaryPage() {
           <h1 className="font-heading font-black text-4xl md:text-5xl text-soil-900 mb-4">
             <span className="text-tomato-500">🍅</span> 栽培日記
           </h1>
-          {latestDay != null && (
-            <p className="inline-flex items-center gap-1 text-sm font-bold text-leaf-600 bg-leaf-50 px-4 py-1.5 rounded-full mb-3">
-              🌱 栽培{latestDay}日目
-            </p>
-          )}
           <p className="text-soil-800/70 text-lg">
             MEGWINのリアル栽培ドキュメンタリー
           </p>
