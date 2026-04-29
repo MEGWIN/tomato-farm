@@ -1,7 +1,13 @@
 import { Client, GatewayIntentBits, Partials, type Message } from "discord.js";
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
-import { generateArticle, generateAppendContent, extractHeightsFromComment } from "./generate-article";
+import {
+  generateArticle,
+  generateAppendContent,
+  extractHeightsFromComment,
+  extractAllPlantsDelta,
+  splitContextAndData,
+} from "./generate-article";
 import { postToCms, uploadImageToCms, getCmsEntry, updateCmsEntry, getLatestDayNumber } from "./post-to-cms";
 import { getTodayEntryId, saveTodayEntryId } from "./today-entry";
 
@@ -169,6 +175,82 @@ function parseHarvest(text: string): { plantId: number; count: number } | null {
   return { plantId, count };
 }
 
+/** 各株の最新草丈（height_cm IS NOT NULL）を取得 */
+async function getLatestHeights(): Promise<Record<number, number>> {
+  const result: Record<number, number> = {};
+  for (const plantId of [1, 2, 3]) {
+    const { data } = await supabase
+      .from("cultivation_logs")
+      .select("height_cm")
+      .eq("plant_id", plantId)
+      .not("height_cm", "is", null)
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const cm = data?.[0]?.height_cm;
+    if (cm != null) result[plantId] = cm as number;
+  }
+  return result;
+}
+
+/**
+ * データ部から3株の草丈を解決する。
+ * 1. 絶対値抽出（「1号50cm 2号45cm」）を試す
+ * 2. 空なら差分抽出（「ともに+2cm」）を試して各株の直近草丈+delta
+ * 3. 過去レコードがない株はスキップ
+ */
+async function resolveHeightsFromDataPart(
+  dataPart: string
+): Promise<Record<number, number>> {
+  const direct = extractHeightsFromComment(dataPart);
+  if (Object.keys(direct).length > 0) return direct;
+
+  const delta = extractAllPlantsDelta(dataPart);
+  if (delta == null) return {};
+
+  const latest = await getLatestHeights();
+  const result: Record<number, number> = {};
+  for (const plantId of [1, 2, 3]) {
+    if (latest[plantId] != null) {
+      result[plantId] = +(latest[plantId] + delta).toFixed(2);
+    }
+  }
+  return result;
+}
+
+/** データ部から収穫コマンドを処理（マッチした場合は処理してtrueを返す） */
+async function processHarvestFromDataPart(
+  message: Message,
+  dataPart: string
+): Promise<boolean> {
+  const harvestParsed = parseHarvest(dataPart);
+  if (!harvestParsed || !/収穫|とれた|採れた/.test(dataPart)) return false;
+
+  const today = getJstDateString();
+  const { error } = await supabase.from("harvests").insert({
+    plant_id: harvestParsed.plantId,
+    date: today,
+    count: harvestParsed.count,
+  });
+  if (error) {
+    await message.reply(`❌ 収穫の保存に失敗: ${error.message}`);
+    return true;
+  }
+  const { data: totals } = await supabase
+    .from("harvests")
+    .select("count")
+    .eq("plant_id", harvestParsed.plantId);
+  const total = (totals ?? []).reduce(
+    (sum, r) => sum + (r.count as number),
+    0
+  );
+  await message.reply(
+    `🍅 ${harvestParsed.plantId}号 ${harvestParsed.count}個 収穫を記録したぜ！\n` +
+      `累計: ${total}個`
+  );
+  return true;
+}
+
 client.on("messageCreate", async (message: Message) => {
   // Bot自身のメッセージは無視
   if (message.author.bot) return;
@@ -176,45 +258,31 @@ client.on("messageCreate", async (message: Message) => {
   // 指定チャンネルのみ
   if (message.channelId !== CHANNEL_ID) return;
 
-  // 収穫コマンド: 「1号5個収穫」など（画像不要）
-  const harvestParsed = parseHarvest(message.content);
-  if (harvestParsed && /収穫|とれた|採れた/.test(message.content)) {
-    const today = getJstDateString();
-    const { error } = await supabase.from("harvests").insert({
-      plant_id: harvestParsed.plantId,
-      date: today,
-      count: harvestParsed.count,
-    });
-    if (error) {
-      await message.reply(`❌ 収穫の保存に失敗: ${error.message}`);
-      return;
-    }
-    const { data: totals } = await supabase
-      .from("harvests")
-      .select("count")
-      .eq("plant_id", harvestParsed.plantId);
-    const total = (totals ?? []).reduce(
-      (sum, r) => sum + (r.count as number),
-      0
-    );
-    await message.reply(
-      `🍅 ${harvestParsed.plantId}号 ${harvestParsed.count}個 収穫を記録したぜ！\n` +
-        `累計: ${total}個`
-    );
-    return;
-  }
-
-  // 画像がない場合は無視
   const imageAttachments = message.attachments.filter((a) =>
     a.contentType?.startsWith("image/")
   );
-  if (imageAttachments.size === 0) return;
+  const hasImages = imageAttachments.size > 0;
 
-  const userText = message.content.trim();
-  if (!userText) {
-    await message.reply("📝 写真と一緒にコメントも書いてね！（例: 今日は葉っぱが大きくなった）");
+  // 画像なし: 全文をデータ部として扱い、収穫コマンドのみ処理
+  if (!hasImages) {
+    await processHarvestFromDataPart(message, message.content);
     return;
   }
+
+  // 画像あり: 文脈部とデータ部に分割（区切りは改行3個以上連続）
+  const { context: articleContext, data: dataPart } = splitContextAndData(
+    message.content
+  );
+
+  if (!articleContext) {
+    await message.reply(
+      "📝 写真と一緒にコメントも書いてね！（例: 今日は葉っぱが大きくなった）"
+    );
+    return;
+  }
+
+  // データ部に収穫コマンドがあれば処理
+  await processHarvestFromDataPart(message, dataPart);
 
   try {
     // 1. 全画像をダウンロードしてmicroCMSにアップロード
@@ -231,21 +299,25 @@ client.on("messageCreate", async (message: Message) => {
       }
     }
 
-    // 2. 今日すでにエントリがあるか確認
+    // 2. データ部から3株の草丈を解決（絶対値→差分の順）
+    const heightsByPlant = await resolveHeightsFromDataPart(dataPart);
+
+    // 3. 今日すでにエントリがあるか確認
     const todayEntryId = getTodayEntryId();
 
     if (todayEntryId) {
       // === 追記モード ===
       await message.reply("🍅 今日の記事に追記中...少し待ってね！");
 
-      // 既存エントリを取得
       const existing = await getCmsEntry(todayEntryId);
       const existingBody = (existing.body as string) || "";
 
-      // Claude CLIで追記セクション生成
-      const appendContent = await generateAppendContent(userText, discordImageUrls, existingBody);
+      const appendContent = await generateAppendContent(
+        articleContext,
+        discordImageUrls,
+        existingBody
+      );
 
-      // 本文を結合（<hr>で区切り、画像はテキストの後ろ）
       const imageTags = cmsImageUrls
         .map((url) => `<figure><img src="${url}" alt="栽培写真" /></figure>`)
         .join("\n");
@@ -253,57 +325,63 @@ client.on("messageCreate", async (message: Message) => {
         cmsImageUrls.length >= 2
           ? `<div class="image-grid">${imageTags}</div>`
           : imageTags;
-      const updatedBody = existingBody + "\n<hr>\n" + appendContent.bodySection + "\n" + wrappedImages;
+      const updatedBody =
+        existingBody + "\n<hr>\n" + appendContent.bodySection + "\n" + wrappedImages;
 
-      // microCMSを更新
       await updateCmsEntry(todayEntryId, {
         body: updatedBody,
         claudeAnalysis: appendContent.claudeAnalysis,
         claudeAdvice: appendContent.claudeAdvice,
       });
 
+      // 追記モードでもデータ部に草丈があれば既存ログをUPSERT
+      if (Object.keys(heightsByPlant).length > 0) {
+        const today = getJstDateString();
+        const { data: todayLogs } = await supabase
+          .from("cultivation_logs")
+          .select("day_number")
+          .eq("date", today)
+          .limit(1);
+        const dayNumber = todayLogs?.[0]?.day_number;
+        if (dayNumber) {
+          for (const [plantIdStr, cm] of Object.entries(heightsByPlant)) {
+            await upsertCultivationLogHeight(
+              dayNumber,
+              parseInt(plantIdStr, 10),
+              cm
+            );
+          }
+        }
+      }
+
       const cmsEditUrl = `https://${process.env.MICROCMS_SERVICE_DOMAIN}.microcms.io/apis/tomato/${todayEntryId}`;
       await message.reply(
-        `✅ 今日の記事に追記したぜ！\n` +
-        `🔗 確認はこちら → ${cmsEditUrl}`
+        `✅ 今日の記事に追記したぜ！\n` + `🔗 確認はこちら → ${cmsEditUrl}`
       );
     } else {
       // === 新規作成モード ===
       await message.reply("🍅 記事を生成中...少し待ってね！");
 
-      // 最新Day番号を取得して次の番号を決定
       const latestDay = await getLatestDayNumber();
       const nextDay = latestDay + 1;
 
-      // Claude Code CLIで記事生成
-      const article = await generateArticle(userText, discordImageUrls, nextDay);
+      const article = await generateArticle(articleContext, discordImageUrls, nextDay);
 
-      // microCMSに下書き投稿
       const cmsResult = await postToCms({
         ...article,
         coverImageUrl: cmsImageUrls[0] ?? null,
         bodyImageUrls: cmsImageUrls,
       });
 
-      // 今日のエントリIDを保存
       saveTodayEntryId(cmsResult.id);
 
-      // コメントから3株分の草丈を抽出
-      const heightsByPlant = extractHeightsFromComment(userText);
-
-      // 栽培ログをSupabaseに保存（株ごとに1レコード）
-      await saveCultivationLogs(
-        nextDay,
-        heightsByPlant,
-        article.slug,
-        null
-      );
+      await saveCultivationLogs(nextDay, heightsByPlant, article.slug, null);
 
       const cmsEditUrl = `https://${process.env.MICROCMS_SERVICE_DOMAIN}.microcms.io/apis/tomato/${cmsResult.id}`;
       await message.reply(
         `✅ 記事を下書き保存したぜ！\n` +
-        `📝 **${article.title}**\n` +
-        `🔗 確認・公開はこちら → ${cmsEditUrl}`
+          `📝 **${article.title}**\n` +
+          `🔗 確認・公開はこちら → ${cmsEditUrl}`
       );
 
       // 3株とも草丈が取れなかった場合のみDiscordで質問

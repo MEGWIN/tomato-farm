@@ -45,6 +45,39 @@ export function extractHeightsFromComment(comment: string): Record<number, numbe
   return result;
 }
 
+/**
+ * コメントから「全株一律の差分」を抽出する。
+ * 対応例:
+ *   「1号、2号、3号ともに、プラス2cm」
+ *   「全部+2cm」「全株+2cm」「みんなプラス2cm」「3株とも+2cm」「それぞれ+2cm」
+ *   「ともに +2.5cm」（小数）「ともに＋2cm」（全角＋）
+ * マッチしない場合は null。
+ */
+export function extractAllPlantsDelta(comment: string): number | null {
+  const text = normalizeDigits(comment);
+  const pattern = /(?:ともに|全部|全員|全株|みな|みんな|それぞれ|3株とも)[\s、,，:：]*(?:[+＋]|プラス)\s*(\d+(?:\.\d+)?)\s*(?:cm|センチ|ｃｍ)/i;
+  const m = text.match(pattern);
+  if (!m) return null;
+  const delta = parseFloat(m[1]);
+  if (delta <= 0 || delta > 100) return null;
+  return delta;
+}
+
+/**
+ * コメントを「文脈部」と「データ部」に分割する。
+ * 区切りは改行3個以上連続（=空行2行以上）。
+ * 区切りがない場合は全文を文脈部、データ部は空文字列。
+ */
+export function splitContextAndData(text: string): { context: string; data: string } {
+  const parts = text.split(/\r?\n\r?\n\r?\n+/);
+  if (parts.length < 2) {
+    return { context: text.trim(), data: "" };
+  }
+  const context = parts[0].trim();
+  const data = parts.slice(1).join("\n").trim();
+  return { context, data };
+}
+
 export type AppendContent = {
   bodySection: string;
   claudeAnalysis: string;
