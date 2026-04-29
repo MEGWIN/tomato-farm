@@ -8,6 +8,7 @@ import {
   type PlantRisk,
 } from "@/lib/weather";
 import {
+  aggregateHourlyAverage,
   getLatestWaterSensor,
   getWaterSensorHistory,
   waterLevelPercent,
@@ -74,17 +75,17 @@ export default async function CultivationDashboard() {
       ? `${plant3Latest.water_level_cm}cm`
       : "準備中";
 
-  // 総合グラフ用データ（24時間分、水温・水質ppm）— JST表示
-  const integratedChartData: IntegratedPoint[] = plant3History.map((log) => {
-    const d = new Date(log.created_at);
-    const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  // 総合グラフ用データ（24時間分、水温・水質ppm）— JST 1時間バケット平均、TDS<600ppm は外れ値として除外
+  const integratedChartData: IntegratedPoint[] = aggregateHourlyAverage(
+    plant3History,
+  ).map((b) => {
+    const jst = new Date(b.hourMs + 9 * 60 * 60 * 1000);
     const h = String(jst.getUTCHours()).padStart(2, "0");
-    const m = String(jst.getUTCMinutes()).padStart(2, "0");
     return {
-      time: `${h}:${m}`,
-      timestamp: d.getTime(),
-      water_temp: log.water_temp,
-      tds_ppm: log.tds_ppm,
+      time: `${h}:00`,
+      timestamp: b.hourMs,
+      water_temp: b.water_temp,
+      tds_ppm: b.tds_ppm,
     };
   });
 
@@ -267,7 +268,7 @@ export default async function CultivationDashboard() {
             <span className="text-tomato-500">🍅</span> プチトマト３ 総合グラフ
           </h3>
           <p className="text-xs text-soil-800/50 mb-4">
-            直近24時間・30分ごと / 水温(°C)・水位(cm)
+            直近24時間・1時間ごと(平均値) / 水温(°C)・水質(ppm)
           </p>
           <Plant3IntegratedChart data={integratedChartData} />
         </div>

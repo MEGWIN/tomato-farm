@@ -56,3 +56,55 @@ export function waterLevelPercent(levelCm: number | null): number | null {
   const pct = Math.round((levelCm / CONTAINER_HEIGHT_CM) * 100);
   return Math.max(0, Math.min(100, pct));
 }
+
+export interface HourlyAverage {
+  /** バケットの基準時刻（JST毎時00分に対応するUTC ms） */
+  hourMs: number;
+  water_temp: number | null;
+  tds_ppm: number | null;
+}
+
+/**
+ * 10分刻みの生ログを JST 1時間バケットに集約して平均値を返す。
+ * 給水時にセンサーを持ち上げた異常値（TDS が極端に低い）は除外する。
+ */
+export function aggregateHourlyAverage(
+  logs: WaterSensorLog[],
+  options: { tdsMinValid?: number } = {},
+): HourlyAverage[] {
+  const tdsMin = options.tdsMinValid ?? 600;
+  const buckets = new Map<number, { temps: number[]; tdss: number[] }>();
+
+  for (const log of logs) {
+    const utcMs = new Date(log.created_at).getTime();
+    // JSTで毎時00分にフロアしたUTC ms をバケットキーにする
+    const jstMs = utcMs + 9 * 60 * 60 * 1000;
+    const jstHourFloorMs = Math.floor(jstMs / 3_600_000) * 3_600_000;
+    const bucketKey = jstHourFloorMs - 9 * 60 * 60 * 1000;
+
+    let bucket = buckets.get(bucketKey);
+    if (!bucket) {
+      bucket = { temps: [], tdss: [] };
+      buckets.set(bucketKey, bucket);
+    }
+
+    if (log.tds_ppm != null) {
+      const tds = Number(log.tds_ppm);
+      // しきい値未満は給水時の持ち上げ等の異常値として除外
+      if (tds >= tdsMin) bucket.tdss.push(tds);
+    }
+    if (log.water_temp != null) {
+      bucket.temps.push(Number(log.water_temp));
+    }
+  }
+
+  const avg = (xs: number[]) => xs.reduce((s, v) => s + v, 0) / xs.length;
+
+  return [...buckets.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([hourMs, b]) => ({
+      hourMs,
+      water_temp: b.temps.length > 0 ? Number(avg(b.temps).toFixed(2)) : null,
+      tds_ppm: b.tdss.length > 0 ? Math.round(avg(b.tdss)) : null,
+    }));
+}
