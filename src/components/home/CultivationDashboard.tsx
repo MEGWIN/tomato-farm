@@ -75,17 +75,24 @@ export default async function CultivationDashboard() {
       ? `${plant3Latest.water_level_cm}cm`
       : "準備中";
 
-  // 総合グラフ用データ（24時間分、水温・水質ppm）— JST 1時間バケット平均、TDS<600ppm は外れ値として除外
-  const integratedChartData: IntegratedPoint[] = aggregateHourlyAverage(
-    plant3History,
-  ).map((b) => {
-    const jst = new Date(b.hourMs + 9 * 60 * 60 * 1000);
+  // 総合グラフ用データ（直近24時間分、水温・水質ppm）— JST 1時間バケット平均、TDS<600ppm は外れ値として除外
+  // 欠損時間帯は null で埋めてX軸を常に24枠にする（connectNulls で線は繋がる）
+  const hourlyMap = new Map(
+    aggregateHourlyAverage(plant3History).map((b) => [b.hourMs, b]),
+  );
+  const nowJstMs = Date.now() + 9 * 60 * 60 * 1000;
+  const currentJstHourFloorMs = Math.floor(nowJstMs / 3_600_000) * 3_600_000;
+  const currentUtcHourFloorMs = currentJstHourFloorMs - 9 * 60 * 60 * 1000;
+  const integratedChartData: IntegratedPoint[] = Array.from({ length: 24 }, (_, i) => {
+    const hourMs = currentUtcHourFloorMs - (23 - i) * 3_600_000;
+    const b = hourlyMap.get(hourMs);
+    const jst = new Date(hourMs + 9 * 60 * 60 * 1000);
     const h = String(jst.getUTCHours()).padStart(2, "0");
     return {
       time: `${h}:00`,
-      timestamp: b.hourMs,
-      water_temp: b.water_temp,
-      tds_ppm: b.tds_ppm,
+      timestamp: hourMs,
+      water_temp: b?.water_temp ?? null,
+      tds_ppm: b?.tds_ppm ?? null,
     };
   });
 
